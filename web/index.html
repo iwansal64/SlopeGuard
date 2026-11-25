@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>SlopeGuard — slope movement watch</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body data-state="LOADING">
+
+<a class="skip" href="#evidence">Skip to evidence</a>
+
+<header class="bar">
+  <div class="brand">
+    <span class="brand-mark">SlopeGuard</span>
+    <span class="brand-sub">rainfall-induced slope-movement early warning</span>
+  </div>
+  <div class="bar-meta">
+    <span id="site" class="chip mono">—</span>
+    <span class="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text">ingest …</span></span>
+    <time id="clock" class="mono">--:--:--</time>
+    <button id="help-btn" class="ghost" aria-haspopup="dialog">Shortcuts <kbd>?</kbd></button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="scene" aria-labelledby="state-word">
+    <svg id="slope" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="slope-title slope-desc">
+      <title id="slope-title">Site cross-section</title>
+      <desc id="slope-desc">A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.</desc>
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1b1714"/>
+          <stop offset="1" stop-color="#13100e"/>
+        </linearGradient>
+        <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#33261c"/>
+          <stop offset="1" stop-color="#241b15"/>
+        </linearGradient>
+        <pattern id="rock" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
+          <line x1="0" y1="0" x2="0" y2="26" stroke="#3b2f26" stroke-width="1"/>
+        </pattern>
+        <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
+          <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect width="900" height="620" fill="url(#sky)"/>
+
+      <!-- distant ridge: terrain depth, not content -->
+      <path d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196 L900 260 L0 300 Z" fill="#191511" opacity="0.9"/>
+      <path d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196" fill="none" stroke="#2d241c" stroke-width="1"/>
+
+      <!-- slope body -->
+      <path d="M0 150 C 260 165 470 300 900 520 L900 620 L0 620 Z" fill="url(#soil)"/>
+      <path d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="#1c1713"/>
+      <path d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="url(#rock)" opacity="0.7"/>
+      <path d="M0 150 C 260 165 470 300 900 520" fill="none" stroke="#5a4635" stroke-width="2"/>
+
+      <!-- water table -->
+      <path id="water" d="M0 470 C 220 462 420 500 900 588" fill="none" stroke="#3f7e86" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>
+
+      <!-- rain -->
+      <g id="rain" class="rain" aria-hidden="true"></g>
+
+      <!-- true level through the sensor heads -->
+      <line class="level" x1="0" y1="250" x2="900" y2="250" stroke="#8d7a67" stroke-width="1" stroke-dasharray="3 6" opacity="0.55"/>
+
+      <!-- reference node on bedrock -->
+      <g id="mast-ref">
+        <rect x="132" y="298" width="38" height="14" rx="2" fill="#2c241d" stroke="#5a4635"/>
+        <g class="mast" id="ref-mast">
+          <line x1="151" y1="300" x2="151" y2="236" stroke="#8d7a67" stroke-width="3"/>
+          <rect x="142" y="222" width="18" height="16" rx="2" fill="#13100e" stroke="#8d7a67"/>
+        </g>
+        <text x="151" y="330" class="svg-label" text-anchor="middle">REFERENCE</text>
+      </g>
+
+      <!-- movement node in the soil -->
+      <g id="mast-move">
+        <ellipse cx="600" cy="378" rx="26" ry="7" fill="#13100e" opacity="0.55"/>
+        <g class="mast" id="move-mast">
+          <line x1="600" y1="374" x2="600" y2="262" stroke="currentColor" stroke-width="3.5"/>
+          <rect x="589" y="246" width="22" height="18" rx="2" fill="#13100e" stroke="currentColor" stroke-width="1.5"/>
+          <circle id="move-led" cx="600" cy="255" r="3.4" fill="currentColor"/>
+          <circle id="move-glow" cx="600" cy="255" r="16" fill="url(#glow)" opacity="0.0"/>
+        </g>
+        <path id="angle-arc" d="" fill="none" stroke="#8d7a67" stroke-width="1" opacity="0.6"/>
+        <text x="618" y="244" class="svg-label mono" id="move-angle">0.00°</text>
+        <text x="600" y="400" class="svg-label" text-anchor="middle">MOVEMENT</text>
+      </g>
+
+      <!-- displacement hint -->
+      <g id="ghost" opacity="0">
+        <path d="M600 262 C 660 262 700 300 720 340" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 5"/>
+      </g>
+
+    </svg>
+
+    <p class="scene-note">relative tilt drawn ×4 · dashed line is true level</p>
+    <p id="stale" class="stale" role="status" hidden></p>
+
+    <div class="verdict">
+      <p id="state-word" class="state">—</p>
+      <p id="sentence" class="sentence" aria-live="polite">Connecting to the site…</p>
+      <ul id="reasons" class="reasons" aria-label="Reason codes"></ul>
+    </div>
+
+    <dl class="gauges">
+      <div><dt>Relative tilt</dt><dd id="g-rel" class="mono">—</dd></div>
+      <div><dt>Rain · 15 min</dt><dd id="g-rain" class="mono">—</dd></div>
+      <div><dt>Soil moisture</dt><dd id="g-soil" class="mono">—</dd></div>
+      <div><dt>Tilt rate</dt><dd id="g-rate" class="mono">—</dd></div>
+    </dl>
+  </section>
+
+  <aside class="rail">
+    <section class="block" id="evidence" tabindex="-1">
+      <h2>Risk trend <span class="hsub">movement − reference, degrees</span></h2>
+      <canvas id="chart-tilt" height="150" aria-label="Relative tilt over time with the 2 degree baseline"></canvas>
+      <p class="chart-note" id="tilt-note">baseline 2.0° · no data yet</p>
+    </section>
+
+    <section class="block">
+      <h2>Loading <span class="hsub">rain per interval · soil %</span></h2>
+      <canvas id="chart-load" height="118" aria-label="Rainfall bars and soil moisture over time"></canvas>
+      <p class="chart-note" id="load-note">—</p>
+    </section>
+
+    <section class="block trust">
+      <h2>Trust <span class="hsub" id="quality">—</span></h2>
+      <table class="nodes">
+        <caption class="sr-only">Node health</caption>
+        <thead>
+          <tr><th scope="col">Node</th><th scope="col">Seq</th><th scope="col">Age</th><th scope="col">Batt</th><th scope="col">RSSI</th></tr>
+        </thead>
+        <tbody id="nodes"></tbody>
+      </table>
+      <ul class="facts">
+        <li><span>Decision rule</span><b id="fact-rule">evidence baseline</b></li>
+        <li><span>Horizon</span><b>30 min</b></li>
+        <li><span>ML model</span><b id="fact-model">not wired</b></li>
+        <li><span>Ingest</span><b id="fact-ingest">—</b></li>
+        <li><span>Rejected</span><b id="fact-rejects">—</b></li>
+      </ul>
+    </section>
+    <p id="source-note" class="source-note" hidden></p>
+  </aside>
+
+  <footer class="strip">
+    <div class="strip-head">
+      <span class="strip-label mono" id="cursor-label">LIVE</span>
+      <div class="strip-actions">
+        <button id="live-btn" class="ghost" type="button">Live</button>
+        <button id="storm-btn" class="primary" type="button">Replay storm</button>
+        <button id="dry-btn" class="ghost" type="button">Dry control</button>
+      </div>
+    </div>
+    <div class="scrub-wrap">
+      <input id="scrub" type="range" min="0" max="0" value="0" step="1" aria-label="Time cursor, drag to inspect a moment">
+      <div class="marks" aria-hidden="true">
+        <i id="mark-rain" class="mark mark-rain" hidden></i>
+        <i id="mark-tilt" class="mark mark-tilt" hidden></i>
+      </div>
+    </div>
+    <div class="strip-scale mono"><span id="t-start">—</span><span id="t-end">—</span></div>
+  </footer>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<dialog id="help" class="help">
+  <h2>Controls</h2>
+  <dl>
+    <div><dt><kbd>R</kbd></dt><dd>Replay the synthetic storm through the live receiver (needs a clean database to change anything)</dd></div>
+    <div><dt><kbd>D</kbd></dt><dd>Replay the calm control fixture recorded 25 minutes after the storm</dd></div>
+    <div><dt><kbd>L</kbd></dt><dd>Return the cursor to live</dd></div>
+    <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Step through the recording</dd></div>
+    <div><dt><kbd>?</kbd></dt><dd>Open or close this panel</dd></div>
+  </dl>
+  <p class="help-note">The verdict is an evidence baseline, not a trained model score. Synthetic fixtures are labelled; do not cite them as field results.</p>
+  <button id="help-close" class="ghost" type="button">Close</button>
+</dialog>
+
+<noscript><p class="noscript">This dashboard needs JavaScript. The API is still readable at <code>/api/data</code>.</p></noscript>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

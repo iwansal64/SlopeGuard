@@ -1,0 +1,5 @@
+# Copy to config/nodes.tokens (git-ignored) and replace with real per-node tokens.
+# Format: <NODE_ID> <token>      one per line; token >= 16 chars; # comments.
+# A token authenticates exactly one node_id: a packet for another node is 401.
+IMU-MOVE-01 CHANGE-ME-0000000000-move
+IMU-REF-01  CHANGE-ME-0000000000-ref0

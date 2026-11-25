@@ -1,0 +1,3 @@
+data/raw/
+config/nodes.tokens
+rust/*/target/
