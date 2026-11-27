@@ -501,20 +501,91 @@ function sumRain(idx) {
 
 /* ---------------- scene ---------------- */
 
+const RAIN_POOL = 72;
+const rainDrops = [];
+const rain = { raf: 0, last: 0, count: 0, speed: 320 };
+
+function newDrop(el) {
+  return {
+    el,
+    x: Math.random() * 940 - 20,
+    y: Math.random() * 660 - 40,
+    len: 14 + Math.random() * 16,
+    mul: 0.8 + Math.random() * 0.45,
+    op: 0.35 + Math.random() * 0.45,
+  };
+}
+
 function buildRain() {
   const g = $("#rain");
   const frag = document.createDocumentFragment();
-  for (let i = 0; i < 22; i++) {
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    const x = 20 + ((i * 137) % 860);
-    const y = 30 + ((i * 53) % 170);
-    line.setAttribute("x1", x);
-    line.setAttribute("y1", y);
-    line.setAttribute("x2", x - 3);
-    line.setAttribute("y2", y + 22);
-    frag.append(line);
+  for (let i = 0; i < RAIN_POOL; i++) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    el.setAttribute("opacity", (0.35 + Math.random() * 0.45).toFixed(2));
+    el.style.display = "none";
+    rainDrops.push(newDrop(el));
+    frag.append(el);
   }
   g.append(frag);
+}
+
+function drawDrops() {
+  for (let i = 0; i < RAIN_POOL; i++) {
+    const d = rainDrops[i];
+    if (i >= rain.count) {
+      d.el.style.display = "none";
+      continue;
+    }
+    d.el.style.display = "";
+    const slant = d.len * 0.16;
+    d.el.setAttribute("x1", d.x.toFixed(1));
+    d.el.setAttribute("y1", d.y.toFixed(1));
+    d.el.setAttribute("x2", (d.x - slant).toFixed(1));
+    d.el.setAttribute("y2", (d.y + d.len).toFixed(1));
+  }
+}
+
+function rainFrame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - rain.last) / 1000));
+  rain.last = now;
+  for (let i = 0; i < rain.count; i++) {
+    const d = rainDrops[i];
+    d.y += rain.speed * d.mul * dt;
+    d.x -= rain.speed * 0.09 * d.mul * dt;
+    if (d.y > 650) {
+      d.y = -30 - Math.random() * 140;
+      d.x = Math.random() * 940 - 20;
+      d.len = 14 + Math.random() * 16;
+      d.mul = 0.8 + Math.random() * 0.45;
+    }
+    if (d.x < -30) d.x = 940 + Math.random() * 20;
+  }
+  drawDrops();
+  rain.raf = requestAnimationFrame(rainFrame);
+}
+
+function stopRain() {
+  if (rain.raf) cancelAnimationFrame(rain.raf);
+  rain.raf = 0;
+  rain.count = 0;
+  for (const d of rainDrops) d.el.style.display = "none";
+}
+
+// Fall speed scales with the rain rate measured by the sensor: ~4.5 m/s in
+// drizzle to ~9 m/s in downpour (scene units are illustrative, not metric).
+function setRain(mm15) {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const mmMin = Math.max(0, mm15 ?? 0) / 15;
+  const on = mmMin > 0.05 && !reduced;
+  $("#rain").classList.toggle("on", on);
+  if (!on) return stopRain();
+  rain.speed = 315 + 315 * clamp(mmMin / 2, 0, 1);
+  rain.count = Math.round(8 + 52 * clamp(mmMin / 1.5, 0, 1));
+  if (!rain.raf) {
+    rain.last = performance.now();
+    drawDrops();
+    rain.raf = requestAnimationFrame(rainFrame);
+  }
 }
 
 function fitScene() {
@@ -556,11 +627,8 @@ function renderScene() {
     $("#water-label").setAttribute("y", String(y + 36));
   }
 
-  const rain = p ? p[5] : rule?.inputs?.rain_15m_mm ? 0.2 : 0;
-  const rainEl = $("#rain");
-  const on = (rain ?? 0) > 0.01;
-  rainEl.classList.toggle("on", on && !matchMedia("(prefers-reduced-motion: reduce)").matches);
-  rainEl.style.animationDuration = on ? `${clamp(1.6 - rain * 4, 0.55, 1.6)}s` : "";
+  const rain15 = p ? sumRain(pi) : rule?.inputs?.rain_15m_mm;
+  setRain(rain15);
 }
 
 /* ---------------- charts ---------------- */
