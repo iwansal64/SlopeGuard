@@ -737,6 +737,8 @@ fn static_file(root: &str, path: &str) -> Option<(String, &'static str)> {
         "/app.js" => ("app.js", "text/javascript; charset=utf-8"),
         "/style.css" => ("style.css", "text/css; charset=utf-8"),
         "/theme.js" => ("theme.js", "text/javascript; charset=utf-8"),
+        "/demo.html" => ("demo.html", "text/html; charset=utf-8"),
+        "/demo.js" => ("demo.js", "text/javascript; charset=utf-8"),
         "/favicon.svg" => ("favicon.svg", "image/svg+xml"),
         _ => return None,
     };

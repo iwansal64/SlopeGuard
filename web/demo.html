@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<script src="/theme.js"></script>
+<title>SlopeGuard — demo mode</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body data-state="STABLE">
+
+<header class="bar">
+  <div class="brand">
+    <span class="brand-mark">SlopeGuard</span>
+    <span class="brand-sub" data-i18n="demo.brand">demo mode</span>
+  </div>
+  <div class="bar-meta">
+    <a class="ghost-link" href="/" data-i18n="demo.back">Live dashboard</a>
+    <button id="theme-btn" class="ghost" type="button">Light</button>
+    <button id="lang-btn" class="ghost" type="button" title="Switch to Bahasa Indonesia">Bahasa</button>
+  </div>
+</header>
+
+<main class="demo-shell">
+  <section class="demo-card">
+    <p class="demo-kicker" data-i18n="demo.kicker">Synthetic recordings</p>
+    <h1 data-i18n="demo.title">Demo mode</h1>
+    <p class="demo-intro" data-i18n="demo.intro">Play a recorded slope scenario into this local dashboard to see how SlopeGuard reacts. Nothing on this page is live field data.</p>
+    <div class="demo-actions">
+      <button id="storm-btn" class="primary" type="button" data-i18n="demo.storm">Storm demo</button>
+      <button id="dry-btn" class="ghost" type="button" data-i18n="demo.dry">Calm demo</button>
+    </div>
+    <p id="demo-status" class="demo-status" role="status" aria-live="polite" data-i18n="demo.idle">Choose a demo to play.</p>
+    <ul class="demo-points">
+      <li><i>01</i><span data-i18n="demo.storm.desc">Heavy rain, rising soil moisture, and tilt crossing the 2° baseline.</span></li>
+      <li><i>02</i><span data-i18n="demo.dry.desc">A calm day: the slope stays inside the baseline.</span></li>
+    </ul>
+    <p class="demo-note" data-i18n="demo.note">Demos are recordings, not live data. Their packets join this dashboard's 30-minute history and then age out. The live dashboard always shows whatever the sensors send.</p>
+    <a class="demo-open" href="/" data-i18n="demo.open">Open the live dashboard</a>
+    <details class="demo-ops">
+      <summary data-i18n="demo.ops">For operators</summary>
+      <p><span data-i18n="demo.ops.body">To remove demo packets immediately, stop the services and run</span> <code>./run.sh demo reset</code></p>
+    </details>
+  </section>
+</main>
+
+<noscript><p class="noscript" data-i18n="demo.noscript">This page needs JavaScript.</p></noscript>
+<script src="/demo.js"></script>
+</body>
+</html>

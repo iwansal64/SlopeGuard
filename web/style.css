@@ -45,7 +45,6 @@
   --stale-ink: #f3c7a0;
   --stale-bg: rgba(66, 33, 20, 0.88);
   --stale-line: rgba(239, 95, 60, 0.45);
-  --source: #c9a06a;
   --backdrop: rgba(8, 6, 5, 0.72);
   --state-stable: #63c39b;
   --state-watch: #e6a94f;
@@ -106,7 +105,6 @@ html[data-theme="light"] {
   --stale-ink: #7a3312;
   --stale-bg: rgba(244, 222, 199, 0.95);
   --stale-line: rgba(185, 58, 28, 0.35);
-  --source: #8a5a12;
   --backdrop: rgba(60, 50, 40, 0.5);
   --state-stable: #237a56;
   --state-watch: #8f5c10;
@@ -336,14 +334,6 @@ kbd {
   color: var(--ink);
   white-space: nowrap;
 }
-.source-note {
-  margin: 14px 0 4px;
-  font: 11px/1.6 var(--mono);
-  color: var(--source);
-  letter-spacing: 0.02em;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
 
 .scene-note {
   position: absolute;
@@ -518,19 +508,87 @@ canvas { display: block; width: 100%; }
 .mk-rain { background: var(--mark-rain); }
 .mk-tilt { background: var(--sig); }
 
-/* ---------- toast / dialog ---------- */
-
-.toast {
-  position: fixed; right: 20px; bottom: 116px; z-index: 30;
-  max-width: 46ch;
-  background: var(--panel); border: 1px solid var(--line-2); border-left: 2px solid var(--sig);
-  padding: 10px 14px; font: 12px/1.5 var(--sans); color: var(--ink-2);
-  opacity: 0; transform: translateY(6px); pointer-events: none;
-  transition: opacity 160ms ease, transform 160ms ease;
+.ghost-link {
+  font: 500 11px/1 var(--sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
-.toast.show { opacity: 1; transform: none; }
-.toast.err { border-left-color: var(--bad); }
-.toast.warn { border-left-color: var(--warn); }
+.ghost-link:hover { border-color: var(--line-2); color: var(--ink); }
+
+/* ---------- demo page ---------- */
+
+.demo-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px 40px;
+}
+.demo-card {
+  width: min(580px, 100%);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 28px 30px 26px;
+  border-radius: 3px;
+}
+.demo-kicker {
+  margin: 0 0 10px;
+  font: 11px/1 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.demo-card h1 {
+  margin: 0 0 12px;
+  font: 600 30px/1.15 var(--sans);
+  color: var(--ink);
+}
+.demo-intro { margin: 0 0 20px; font: 15px/1.65 var(--sans); color: var(--ink-2); }
+.demo-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.demo-status {
+  margin: 18px 0 0;
+  min-height: 1.5em;
+  font: 13px/1.5 var(--mono);
+  color: var(--muted);
+}
+.demo-status.err { color: var(--bad); }
+.demo-points { margin: 20px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.demo-points li {
+  display: grid; grid-template-columns: 16px 1fr; gap: 10px;
+  font: 13px/1.55 var(--sans); color: var(--muted);
+}
+.demo-points b { color: var(--ink-2); font-weight: 600; }
+.demo-points i { color: var(--sig); font-style: normal; font-family: var(--mono); font-size: 12px; }
+.demo-note {
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font: 13px/1.6 var(--sans);
+  color: var(--dim);
+}
+.demo-open {
+  display: inline-block;
+  margin-top: 16px;
+  font: 600 12px/1 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sig);
+  text-decoration: none;
+}
+.demo-open:hover { text-decoration: underline; }
+.demo-ops { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.demo-ops summary { cursor: pointer; font: 600 11px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.demo-ops p { margin: 10px 0 0; font: 12px/1.6 var(--mono); color: var(--dim); }
+.demo-ops code { color: var(--ink-2); }
+
+/* ---------- dialog ---------- */
 
 .help {
   border: 1px solid var(--line-2); background: var(--panel-2); color: var(--ink);
@@ -572,7 +630,6 @@ canvas { display: block; width: 100%; }
 .lang-note { margin: 14px 0 0; font: 12px/1.5 var(--sans); color: var(--dim); }
 .lang-pick::backdrop { background: var(--backdrop); }
 .noscript { padding: 20px; color: var(--muted); }
-.toast, .help { color-scheme: dark; }
 
 /* ---------- tour ---------- */
 
@@ -641,12 +698,10 @@ canvas { display: block; width: 100%; }
   .gauges dd { font-size: 18px; }
   .rail { overflow: visible; padding: 18px 18px 0; }
   .strip { position: sticky; bottom: 0; z-index: 10; padding: 10px 18px 8px; }
-  .toast { bottom: 132px; left: 18px; right: 18px; max-width: none; }
   .brand-sub { display: none; }
   .bar { padding: 10px 18px; gap: 12px; }
   .bar-meta { gap: 12px; }
   #clock { display: none; }
-  .source-note { position: static; max-width: none; text-align: left; margin: 0 0 10px; }
 }
 
 @media (max-width: 420px) {

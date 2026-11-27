@@ -22,6 +22,7 @@
     <span id="site" class="chip mono">—</span>
     <span class="ingest" id="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text" data-i18n="ingest.wait">connecting …</span></span>
     <time id="clock" class="mono">--:--:--</time>
+    <a class="ghost-link" href="/demo.html" data-i18n="nav.demo">Demo</a>
     <button id="theme-btn" class="ghost" type="button">Light</button>
     <button id="lang-btn" class="ghost" type="button" title="Switch to Bahasa Indonesia">Bahasa</button>
     <button id="help-btn" class="ghost" aria-haspopup="dialog" data-i18n-title="help.open.title"><span data-i18n="help.shortcuts">Guide</span> <kbd>?</kbd></button>
@@ -164,7 +165,6 @@
         <li><span data-i18n="facts.rejects">Rejected</span><b id="fact-rejects">—</b></li>
       </ul>
     </details>
-    <p id="source-note" class="source-note" hidden></p>
   </aside>
 
   <footer class="strip">
@@ -172,8 +172,6 @@
       <span class="strip-label mono" id="cursor-label">LIVE</span>
       <div class="strip-actions">
         <button id="live-btn" class="ghost" type="button" data-i18n="strip.live">Live</button>
-        <button id="storm-btn" class="ghost" type="button" data-i18n="strip.storm" data-i18n-title="strip.storm.title">Storm demo</button>
-        <button id="dry-btn" class="ghost" type="button" data-i18n="strip.dry" data-i18n-title="strip.dry.title">Calm demo</button>
       </div>
     </div>
     <div class="scrub-wrap">
@@ -190,8 +188,6 @@
     </div>
   </footer>
 </main>
-
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <dialog id="lang-pick" class="help lang-pick">
   <h2>Choose language</h2>
@@ -216,8 +212,6 @@
   <details class="help-keys">
     <summary data-i18n="help.keys">Keyboard shortcuts</summary>
     <dl>
-      <div><dt><kbd>R</kbd></dt><dd data-i18n="help.r">Play the storm demo to see how the dashboard reacts to heavy rain.</dd></div>
-      <div><dt><kbd>D</kbd></dt><dd data-i18n="help.d">Play the calm demo to see a normal day.</dd></div>
       <div><dt><kbd>L</kbd></dt><dd data-i18n="help.l">Return the cursor to live</dd></div>
       <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-i18n="help.arrows">Step through the recording</dd></div>
       <div><dt><kbd>?</kbd></dt><dd data-i18n="help.q">Open or close this panel</dd></div>

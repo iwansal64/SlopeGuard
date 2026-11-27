@@ -6,7 +6,6 @@ const state = {
   data: null,
   cursor: null, // index into movement points, null = live
   error: null,
-  replaying: false,
 };
 
 const LEVEL_DEG = 2.0; // mirrors analysis::BaselineConfig::default().relative_pitch_deg
@@ -19,6 +18,7 @@ const I18N = {
     "skip": "Skip to evidence",
     "brand.sub": "rainfall-induced slope-movement early warning",
     "help.shortcuts": "Guide",
+    "nav.demo": "Demo",
     "help.open.title": "Open the guide",
     "lang.switch": "Switch to Bahasa Indonesia",
     "theme.light": "Light",
@@ -122,13 +122,6 @@ const I18N = {
     "stale.none": "NO DATA YET — nothing has arrived. Try a demo below or power the sensor.",
     "stale.fault": "SENSOR FAULT — {node} reports {status}. Measurements are not trusted.",
     "stale.stale": "STALE — newest packet {age} old. Values shown are the last known, not current.",
-    "source.note": "Demo recording. Not live field data.",
-    "toast.storm": "Storm replay",
-    "toast.dry": "Dry control",
-    "toast.start": "{label}: playing the recording…",
-    "toast.done": "{label}: {accepted} new packets · {duplicate} already loaded · {rejected} failed",
-    "toast.stored": " — this demo was already loaded. Reset the demo to watch it again.",
-    "toast.failed": "Demo failed: {error}. Check the demo service and try again.",
     "help.title": "Guide",
     "help.intro": "SlopeGuard watches a hillside and tells you, in plain words, whether the slope is stable or starting to move.",
     "help.legend.stable": "no concerning movement",
@@ -137,8 +130,6 @@ const I18N = {
     "help.legend.unknown": "data is missing or stale",
     "help.tour": "Show me around",
     "help.keys": "Keyboard shortcuts",
-    "help.r": "Play the storm demo to see how the dashboard reacts to heavy rain.",
-    "help.d": "Play the calm demo to see a normal day.",
     "help.l": "Return the cursor to live",
     "help.arrows": "Step through the recording",
     "help.q": "Open or close this panel",
@@ -161,8 +152,8 @@ const I18N = {
     "tour.evidence.body": "Top chart: solid orange is tilt, dashed orange is the 2° baseline, dotted pale is the time cursor. Bottom chart: blue bars are rain per packet, the thin line is soil moisture. Drag the timeline below to look back in time.",
     "tour.more.title": "Sensors & system",
     "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made. The slope sensor sits in the soil; the reference sensor sits on stable bedrock.",
-    "tour.strip.title": "Demos & timeline",
-    "tour.strip.body": "Storm demo and Calm demo replay recordings so you can watch the dashboard react. Live returns the timeline to real time. These are demos, not field forecasts.",
+    "tour.strip.title": "Timeline",
+    "tour.strip.body": "Drag the slider to review the last 30 minutes; Live returns to now. Rain onset and the 2° crossing are marked on the track. Demos have their own page, opened from the Demo button in the header.",
     "tour.lang.title": "Language & theme",
     "tour.lang.body": "Use these buttons to switch between English and Bahasa Indonesia and between the light and dark theme. Your choices are remembered.",
     "noscript": "This dashboard needs JavaScript. The API is still readable at",
@@ -172,6 +163,7 @@ const I18N = {
     "skip": "Langsung ke bukti",
     "brand.sub": "peringatan dini pergerakan lereng akibat hujan",
     "help.shortcuts": "Panduan",
+    "nav.demo": "Demo",
     "help.open.title": "Buka panduan",
     "lang.switch": "Ganti ke Bahasa Inggris",
     "theme.light": "Terang",
@@ -275,13 +267,6 @@ const I18N = {
     "stale.none": "BELUM ADA DATA — belum ada data yang masuk. Coba demo di bawah atau nyalakan sensor.",
     "stale.fault": "GANGGUAN SENSOR — {node} melaporkan {status}. Pengukuran tidak dapat dipercaya.",
     "stale.stale": "DATA LAMA — paket terbaru berumur {age}. Nilai yang tampil adalah data terakhir, bukan kondisi saat ini.",
-    "source.note": "Rekaman demo. Bukan data lapangan langsung.",
-    "toast.storm": "Demo badai",
-    "toast.dry": "Demo tenang",
-    "toast.start": "{label}: memutar rekaman…",
-    "toast.done": "{label}: {accepted} paket baru · {duplicate} sudah dimuat · {rejected} gagal",
-    "toast.stored": " — demo ini sudah pernah dimuat. Reset demo untuk menontonnya lagi.",
-    "toast.failed": "Demo gagal: {error}. Periksa layanan demo lalu coba lagi.",
     "help.title": "Panduan",
     "help.intro": "SlopeGuard memantau lereng dan memberi tahu dengan bahasa sederhana apakah lereng aman atau mulai bergerak.",
     "help.legend.stable": "tidak ada pergerakan yang mengkhawatirkan",
@@ -290,8 +275,6 @@ const I18N = {
     "help.legend.unknown": "data hilang atau sudah lama",
     "help.tour": "Tunjukkan cara pakai",
     "help.keys": "Shortcut keyboard",
-    "help.r": "Putar demo badai untuk melihat reaksi dashboard saat hujan lebat.",
-    "help.d": "Putar demo tenang untuk melihat kondisi hari normal.",
     "help.l": "Kembalikan kursor ke mode live",
     "help.arrows": "Maju atau mundur satu paket data",
     "help.q": "Buka atau tutup panel ini",
@@ -314,8 +297,8 @@ const I18N = {
     "tour.evidence.body": "Grafik atas: oranye solid adalah tilt, oranye putus-putus adalah baseline 2°, titik-titik pucat adalah kursor waktu. Grafik bawah: batang biru adalah hujan per paket, garis tipis adalah kelembapan tanah. Geser timeline di bawah untuk melihat ke belakang.",
     "tour.more.title": "Sensor & sistem",
     "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan. Sensor slope tertanam di tanah; sensor referensi di batuan dasar yang stabil.",
-    "tour.strip.title": "Demo & timeline",
-    "tour.strip.body": "Demo badai dan demo tenang memutar rekaman agar Anda melihat reaksi dashboard. Live mengembalikan timeline ke waktu nyata. Ini demo, bukan prakiraan lapangan.",
+    "tour.strip.title": "Timeline",
+    "tour.strip.body": "Geser slider untuk meninjau 30 menit terakhir; Live kembali ke sekarang. Awal hujan dan saat melewati 2° ditandai di trek. Demo punya halaman sendiri, dibuka lewat tombol Demo di header.",
     "tour.lang.title": "Bahasa & tema",
     "tour.lang.body": "Gunakan tombol ini untuk berganti bahasa (Indonesia/Inggris) dan tema (terang/gelap). Pilihan Anda diingat.",
     "noscript": "Dashboard ini membutuhkan JavaScript. API tetap bisa dibaca di",
@@ -976,59 +959,6 @@ async function refresh() {
 
 /* ---------------- actions ---------------- */
 
-let toastTimer;
-function toast(message, kind = "") {
-  const el = $("#toast");
-  el.textContent = message;
-  el.className = `toast show ${kind}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.className = "toast"), 5200);
-}
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-async function replay(scenario, labelKey, btn) {
-  if (state.replaying) return;
-  state.replaying = true;
-  btn.disabled = true;
-  const label = t(labelKey);
-  toast(t("toast.start", { label }));
-  try {
-    const res = await fetch("/api/replay", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scenario, rate: 8 }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.detail || body.error || `HTTP ${res.status}`);
-    const extra = body.errors?.length ? ` — ${body.errors[0]}` : "";
-    const nothingNew = body.pushed > 0 && body.accepted === 0;
-    toast(
-      t("toast.done", {
-        label,
-        accepted: body.accepted,
-        duplicate: body.duplicate,
-        rejected: body.rejected,
-      }) +
-        extra +
-        (nothingNew ? t("toast.stored") : ""),
-      body.rejected || body.errors?.length ? "err" : nothingNew ? "warn" : "",
-    );
-    $("#source-note").hidden = false;
-    $("#source-note").textContent = t("source.note");
-    state.cursor = null;
-    for (let i = 0; i < 10; i++) {
-      await sleep(320);
-      await refresh();
-    }
-  } catch (err) {
-    toast(t("toast.failed", { error: err.message }), "err");
-  } finally {
-    state.replaying = false;
-    btn.disabled = false;
-  }
-}
-
 function stepCursor(delta) {
   const n = movePoints().length;
   if (!n) return;
@@ -1143,8 +1073,6 @@ function wire() {
   });
 
   $("#live-btn").addEventListener("click", goLive);
-  $("#storm-btn").addEventListener("click", (e) => replay("storm", "toast.storm", e.currentTarget));
-  $("#dry-btn").addEventListener("click", (e) => replay("dry", "toast.dry", e.currentTarget));
 
   $("#theme-btn").addEventListener("click", () => {
     applyTheme(currentTheme() === "dark" ? "light" : "dark");
@@ -1204,14 +1132,6 @@ function wire() {
       case "?":
         e.preventDefault();
         help.open ? help.close() : help.showModal();
-        break;
-      case "r":
-      case "R":
-        replay("storm", "toast.storm", $("#storm-btn"));
-        break;
-      case "d":
-      case "D":
-        replay("dry", "toast.dry", $("#dry-btn"));
         break;
       case "l":
       case "L":
