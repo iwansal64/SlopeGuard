@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
+<script src="/theme.js"></script>
 <title>SlopeGuard — slope movement watch</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">
@@ -21,6 +22,7 @@
     <span id="site" class="chip mono">—</span>
     <span class="ingest" id="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text" data-i18n="ingest.wait">connecting …</span></span>
     <time id="clock" class="mono">--:--:--</time>
+    <button id="theme-btn" class="ghost" type="button">Light</button>
     <button id="lang-btn" class="ghost" type="button" title="Switch to Bahasa Indonesia">Bahasa</button>
     <button id="help-btn" class="ghost" aria-haspopup="dialog" data-i18n-title="help.open.title"><span data-i18n="help.shortcuts">Guide</span> <kbd>?</kbd></button>
   </div>
@@ -53,17 +55,17 @@
       <rect width="900" height="620" fill="url(#sky)"/>
 
       <!-- distant ridge: terrain depth, not content -->
-      <path d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196 L900 260 L0 300 Z" fill="#191511" opacity="0.9"/>
-      <path d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196" fill="none" stroke="#2d241c" stroke-width="1"/>
+      <path class="ridge" d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196 L900 260 L0 300 Z" fill="#191511" opacity="0.9"/>
+      <path class="ridge-line" d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196" fill="none" stroke="#2d241c" stroke-width="1"/>
 
       <!-- slope body -->
       <path d="M0 150 C 260 165 470 300 900 520 L900 620 L0 620 Z" fill="url(#soil)"/>
-      <path d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="#1c1713"/>
+      <path class="bedrock" d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="#1c1713"/>
       <path d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="url(#rock)" opacity="0.7"/>
-      <path d="M0 150 C 260 165 470 300 900 520" fill="none" stroke="#5a4635" stroke-width="2"/>
+      <path class="surface" d="M0 150 C 260 165 470 300 900 520" fill="none" stroke="#5a4635" stroke-width="2"/>
 
       <!-- water table -->
-      <path id="water" d="M0 470 C 220 462 420 500 900 588" fill="none" stroke="#3f7e86" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>
+      <path id="water" class="water" d="M0 470 C 220 462 420 500 900 588" fill="none" stroke="#3f7e86" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>
 
       <!-- rain -->
       <g id="rain" class="rain" aria-hidden="true"></g>

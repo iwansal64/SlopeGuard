@@ -21,6 +21,10 @@ const I18N = {
     "help.shortcuts": "Guide",
     "help.open.title": "Open the guide",
     "lang.switch": "Switch to Bahasa Indonesia",
+    "theme.light": "Light",
+    "theme.dark": "Dark",
+    "theme.light.title": "Switch to light theme",
+    "theme.dark.title": "Switch to dark theme",
     "site.none": "no site",
     "ingest.up": "connected",
     "ingest.down": "offline",
@@ -147,8 +151,8 @@ const I18N = {
     "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made. The slope sensor sits in the soil; the reference sensor sits on stable bedrock.",
     "tour.strip.title": "Demos & timeline",
     "tour.strip.body": "Storm demo and Calm demo replay recordings so you can watch the dashboard react. Live returns the timeline to real time. These are demos, not field forecasts.",
-    "tour.lang.title": "Language",
-    "tour.lang.body": "Click here to switch between English and Bahasa Indonesia at any time. Your choice is remembered.",
+    "tour.lang.title": "Language & theme",
+    "tour.lang.body": "Use these buttons to switch between English and Bahasa Indonesia and between the light and dark theme. Your choices are remembered.",
     "noscript": "This dashboard needs JavaScript. The API is still readable at",
   },
   id: {
@@ -158,6 +162,10 @@ const I18N = {
     "help.shortcuts": "Panduan",
     "help.open.title": "Buka panduan",
     "lang.switch": "Ganti ke Bahasa Inggris",
+    "theme.light": "Terang",
+    "theme.dark": "Gelap",
+    "theme.light.title": "Ganti ke tema terang",
+    "theme.dark.title": "Ganti ke tema gelap",
     "site.none": "tanpa situs",
     "ingest.up": "online",
     "ingest.down": "offline",
@@ -284,8 +292,8 @@ const I18N = {
     "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan. Sensor slope tertanam di tanah; sensor referensi di batuan dasar yang stabil.",
     "tour.strip.title": "Demo & timeline",
     "tour.strip.body": "Demo badai dan demo tenang memutar rekaman agar Anda melihat reaksi dashboard. Live mengembalikan timeline ke waktu nyata. Ini demo, bukan prakiraan lapangan.",
-    "tour.lang.title": "Bahasa",
-    "tour.lang.body": "Klik di sini untuk berganti antara Bahasa Indonesia dan Inggris kapan saja. Pilihan Anda diingat.",
+    "tour.lang.title": "Bahasa & tema",
+    "tour.lang.body": "Gunakan tombol ini untuk berganti bahasa (Indonesia/Inggris) dan tema (terang/gelap). Pilihan Anda diingat.",
     "noscript": "Dashboard ini membutuhkan JavaScript. API tetap bisa dibaca di",
   },
 };
@@ -328,8 +336,34 @@ function applyLanguage() {
   btn.textContent = t(lang === "en" ? "lang.btn.toId" : "lang.btn.toEn");
   btn.title = t("lang.switch");
   btn.lang = lang === "en" ? "id" : "en";
+  refreshThemeButton();
   render();
 }
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+function refreshThemeButton() {
+  const btn = $("#theme-btn");
+  if (!btn) return;
+  const dark = currentTheme() === "dark";
+  btn.textContent = t(dark ? "theme.light" : "theme.dark");
+  btn.title = t(dark ? "theme.light.title" : "theme.dark.title");
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const meta = document.querySelector('meta[name="color-scheme"]');
+  if (meta) meta.content = theme;
+  try {
+    localStorage.setItem("sg-theme", theme);
+  } catch {}
+  refreshThemeButton();
+  render();
+}
+
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 const fmt = (v, digits = 2, unit = "") =>
   v === null || v === undefined || !Number.isFinite(v) ? "—" : `${v.toFixed(digits)}${unit}`;
@@ -554,12 +588,12 @@ function drawTilt() {
   const top = maxAbs * 1.25;
   const Y = (v) => pad.t + ((top - v) / (2 * top)) * ih;
 
-  ctx.strokeStyle = "#2b231c";
+  ctx.strokeStyle = cssVar("--chart-grid");
   ctx.lineWidth = 1;
   for (const v of [-top, -LEVEL_DEG, 0, LEVEL_DEG, top]) {
     if (Math.abs(v) === top) continue;
     ctx.setLineDash(v === 0 ? [] : [3, 4]);
-    ctx.strokeStyle = v === 0 ? "#5c4939" : v === LEVEL_DEG ? "rgba(239,95,60,0.55)" : "#2b231c";
+    ctx.strokeStyle = v === 0 ? cssVar("--chart-zero") : v === LEVEL_DEG ? cssVar("--chart-threshold") : cssVar("--chart-grid");
     ctx.beginPath();
     ctx.moveTo(pad.l, Y(v));
     ctx.lineTo(w - pad.r, Y(v));
@@ -567,7 +601,7 @@ function drawTilt() {
   }
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "#a99b8c";
+  ctx.fillStyle = cssVar("--dim");
   ctx.font = MONO;
   ctx.textAlign = "right";
   ctx.fillText("+2°", pad.l - 6, Y(LEVEL_DEG) + 3);
@@ -600,7 +634,7 @@ function drawTilt() {
   if (pi >= 0) {
     const p = pts[pi];
     const t = p[0];
-    ctx.strokeStyle = "rgba(242,236,226,0.35)";
+    ctx.strokeStyle = cssVar("--chart-cursor");
     ctx.setLineDash([2, 3]);
     ctx.beginPath();
     ctx.moveTo(X(t), pad.t);
@@ -610,19 +644,19 @@ function drawTilt() {
     if (p[3] !== null) {
       ctx.beginPath();
       ctx.arc(X(t), Y(p[3]), 3.2, 0, Math.PI * 2);
-      ctx.fillStyle = "#f2ece2";
+      ctx.fillStyle = cssVar("--chart-dot");
       ctx.fill();
     }
   }
 
   if (!pts.length) {
-    ctx.fillStyle = "#a99b8c";
+    ctx.fillStyle = cssVar("--dim");
     ctx.textAlign = "center";
     ctx.font = '11px system-ui, sans-serif';
     ctx.fillText(t("chart.noPackets"), w / 2, h / 2);
   }
 
-  ctx.fillStyle = "#a99b8c";
+  ctx.fillStyle = cssVar("--dim");
   ctx.font = MONO;
   ctx.textAlign = "left";
   ctx.fillText(hhmm(t0), pad.l, h - 6);
@@ -645,7 +679,7 @@ function drawLoad() {
   for (const p of pts) rainMax = Math.max(rainMax, p[5] ?? 0);
   const Yr = (v) => pad.t + ih - (v / rainMax) * ih;
 
-  ctx.strokeStyle = "#2b231c";
+  ctx.strokeStyle = cssVar("--chart-grid");
   ctx.lineWidth = 1;
   for (const v of [0, 50, 100]) {
     ctx.beginPath();
@@ -653,7 +687,7 @@ function drawLoad() {
     ctx.lineTo(w - pad.r, Ys(v));
     ctx.stroke();
   }
-  ctx.fillStyle = "#a99b8c";
+  ctx.fillStyle = cssVar("--dim");
   ctx.font = MONO;
   ctx.textAlign = "right";
   ctx.fillText("100", pad.l - 6, Ys(100) + 3);
@@ -662,7 +696,7 @@ function drawLoad() {
   ctx.fillText(t("chart.soil"), w - pad.r + 6, Ys(100) + 3);
 
   const barW = Math.max(1, (iw / Math.max(1, pts.length)) * 0.55);
-  ctx.fillStyle = "rgba(79,143,154,0.7)";
+  ctx.fillStyle = cssVar("--chart-rain");
   for (const p of pts) {
     const v = p[5];
     if (!v) continue;
@@ -674,14 +708,14 @@ function drawLoad() {
   if (soilPts.length > 1) {
     ctx.beginPath();
     soilPts.forEach((p, i) => (i ? ctx.lineTo(X(p[0]), Ys(p[6])) : ctx.moveTo(X(p[0]), Ys(p[6]))));
-    ctx.strokeStyle = "#c4b6a6";
+    ctx.strokeStyle = cssVar("--chart-soil");
     ctx.lineWidth = 1.4;
     ctx.stroke();
   }
 
   const pi = activeIndex();
   if (pi >= 0) {
-    ctx.strokeStyle = "rgba(242,236,226,0.35)";
+    ctx.strokeStyle = cssVar("--chart-cursor");
     ctx.setLineDash([2, 3]);
     ctx.beginPath();
     ctx.moveTo(X(pts[pi][0]), pad.t);
@@ -690,7 +724,7 @@ function drawLoad() {
     ctx.setLineDash([]);
   }
 
-  ctx.fillStyle = "#a99b8c";
+  ctx.fillStyle = cssVar("--dim");
   ctx.font = MONO;
   ctx.textAlign = "left";
   ctx.fillText(hhmm(t0), pad.l, h - 6);
@@ -755,7 +789,7 @@ function renderTrust() {
       : t("model.none");
   $("#fact-rule").textContent = d?.rule?.basis === "evidence-rule" ? t("facts.rule.value") : (d?.rule?.basis ?? "—");
   $("#fact-ingest").textContent = d?.receiver?.up ? t("ingest.up") : t("ingest.down");
-  $("#fact-ingest").style.color = d?.receiver?.up ? "" : "#ef5f3c";
+  $("#fact-ingest").style.color = d?.receiver?.up ? "" : "var(--bad)";
   const rejects = d?.db?.rejects;
   $("#fact-rejects").textContent = rejects === undefined ? "—" : `${rejects}${d.db.last_reject ? ` · ${String(d.db.last_reject.reason).slice(0, 22)}` : ""}`;
   $("#fact-rejects").title = d?.db?.last_reject ? `${d.db.last_reject.at} — ${d.db.last_reject.reason}` : t("facts.rejects.none");
@@ -921,7 +955,7 @@ const TOUR = [
   { sel: "#evidence", key: "evidence" },
   { sel: "details.more", key: "more", open: true },
   { sel: ".strip", key: "strip" },
-  { sel: "#lang-btn", key: "lang" },
+  { sel: ".bar-meta", key: "lang" },
 ];
 
 let tourIndex = 0;
@@ -1015,6 +1049,10 @@ function wire() {
   $("#live-btn").addEventListener("click", goLive);
   $("#storm-btn").addEventListener("click", (e) => replay("storm", "toast.storm", e.currentTarget));
   $("#dry-btn").addEventListener("click", (e) => replay("dry", "toast.dry", e.currentTarget));
+
+  $("#theme-btn").addEventListener("click", () => {
+    applyTheme(currentTheme() === "dark" ? "light" : "dark");
+  });
 
   $("#lang-btn").addEventListener("click", () => {
     lang = lang === "en" ? "id" : "en";
