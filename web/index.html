@@ -10,18 +10,19 @@
 </head>
 <body data-state="LOADING">
 
-<a class="skip" href="#evidence">Skip to evidence</a>
+<a class="skip" href="#evidence" data-i18n="skip">Skip to evidence</a>
 
 <header class="bar">
   <div class="brand">
     <span class="brand-mark">SlopeGuard</span>
-    <span class="brand-sub">rainfall-induced slope-movement early warning</span>
+    <span class="brand-sub" data-i18n="brand.sub">rainfall-induced slope-movement early warning</span>
   </div>
   <div class="bar-meta">
     <span id="site" class="chip mono">—</span>
-    <span class="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text">ingest …</span></span>
+    <span class="ingest" id="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text" data-i18n="ingest.wait">connecting …</span></span>
     <time id="clock" class="mono">--:--:--</time>
-    <button id="help-btn" class="ghost" aria-haspopup="dialog">Shortcuts <kbd>?</kbd></button>
+    <button id="lang-btn" class="ghost" type="button" title="Switch to Bahasa Indonesia">Bahasa</button>
+    <button id="help-btn" class="ghost" aria-haspopup="dialog" data-i18n-title="help.open.title"><span data-i18n="help.shortcuts">Guide</span> <kbd>?</kbd></button>
   </div>
 </header>
 
@@ -29,8 +30,8 @@
 
   <section class="scene" aria-labelledby="state-word">
     <svg id="slope" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="slope-title slope-desc">
-      <title id="slope-title">Site cross-section</title>
-      <desc id="slope-desc">A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.</desc>
+      <title id="slope-title" data-i18n="svg.title">Site cross-section</title>
+      <desc id="slope-desc" data-i18n="svg.desc">A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.</desc>
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#1b1714"/>
@@ -68,16 +69,16 @@
       <g id="rain" class="rain" aria-hidden="true"></g>
 
       <!-- true level through the sensor heads -->
-      <line class="level" x1="0" y1="250" x2="900" y2="250" stroke="#8d7a67" stroke-width="1" stroke-dasharray="3 6" opacity="0.55"/>
+      <line class="level" x1="0" y1="250" x2="900" y2="250" stroke="#b09a83" stroke-width="1" stroke-dasharray="3 6" opacity="0.55"/>
 
       <!-- reference node on bedrock -->
       <g id="mast-ref">
         <rect x="132" y="298" width="38" height="14" rx="2" fill="#2c241d" stroke="#5a4635"/>
         <g class="mast" id="ref-mast">
-          <line x1="151" y1="300" x2="151" y2="236" stroke="#8d7a67" stroke-width="3"/>
-          <rect x="142" y="222" width="18" height="16" rx="2" fill="#13100e" stroke="#8d7a67"/>
+          <line x1="151" y1="300" x2="151" y2="236" stroke="#b09a83" stroke-width="3"/>
+          <rect x="142" y="222" width="18" height="16" rx="2" fill="#13100e" stroke="#b09a83"/>
         </g>
-        <text x="151" y="330" class="svg-label" text-anchor="middle">REFERENCE</text>
+        <text x="151" y="330" class="svg-label" text-anchor="middle" data-i18n="svg.reference">REFERENCE</text>
       </g>
 
       <!-- movement node in the soil -->
@@ -89,9 +90,9 @@
           <circle id="move-led" cx="600" cy="255" r="3.4" fill="currentColor"/>
           <circle id="move-glow" cx="600" cy="255" r="16" fill="url(#glow)" opacity="0.0"/>
         </g>
-        <path id="angle-arc" d="" fill="none" stroke="#8d7a67" stroke-width="1" opacity="0.6"/>
+        <path id="angle-arc" d="" fill="none" stroke="#b09a83" stroke-width="1" opacity="0.6"/>
         <text x="618" y="244" class="svg-label mono" id="move-angle">0.00°</text>
-        <text x="600" y="400" class="svg-label" text-anchor="middle">MOVEMENT</text>
+        <text x="600" y="400" class="svg-label" text-anchor="middle" data-i18n="svg.movement">MOVEMENT</text>
       </g>
 
       <!-- displacement hint -->
@@ -101,53 +102,53 @@
 
     </svg>
 
-    <p class="scene-note">relative tilt drawn ×4 · dashed line is true level</p>
+    <p class="scene-note" data-i18n="scene.note">relative tilt drawn ×4 · dashed line is true level</p>
     <p id="stale" class="stale" role="status" hidden></p>
 
     <div class="verdict">
       <p id="state-word" class="state">—</p>
-      <p id="sentence" class="sentence" aria-live="polite">Connecting to the site…</p>
-      <ul id="reasons" class="reasons" aria-label="Reason codes"></ul>
+      <p id="sentence" class="sentence" aria-live="polite" data-i18n="verdict.loading">Connecting to the site…</p>
+      <ul id="reasons" class="reasons" aria-label="Reason codes" data-i18n-aria="reasons.aria" hidden></ul>
     </div>
 
     <dl class="gauges">
-      <div><dt>Relative tilt</dt><dd id="g-rel" class="mono">—</dd></div>
-      <div><dt>Rain · 15 min</dt><dd id="g-rain" class="mono">—</dd></div>
-      <div><dt>Soil moisture</dt><dd id="g-soil" class="mono">—</dd></div>
-      <div><dt>Tilt rate</dt><dd id="g-rate" class="mono">—</dd></div>
+      <div><dt data-i18n="gauges.rel">Relative tilt</dt><dd id="g-rel" class="mono">—</dd></div>
+      <div><dt data-i18n="gauges.rain">Rain · 15 min</dt><dd id="g-rain" class="mono">—</dd></div>
+      <div><dt data-i18n="gauges.soil">Soil moisture</dt><dd id="g-soil" class="mono">—</dd></div>
+      <div><dt data-i18n="gauges.rate">Tilt rate</dt><dd id="g-rate" class="mono">—</dd></div>
     </dl>
   </section>
 
   <aside class="rail">
     <section class="block" id="evidence" tabindex="-1">
-      <h2>Risk trend <span class="hsub">movement − reference, degrees</span></h2>
-      <canvas id="chart-tilt" height="150" aria-label="Relative tilt over time with the 2 degree baseline"></canvas>
-      <p class="chart-note" id="tilt-note">baseline 2.0° · no data yet</p>
+      <h2><span data-i18n="trend.title">Risk trend</span> <span class="hsub" data-i18n="trend.sub">movement − reference, degrees</span></h2>
+      <canvas id="chart-tilt" height="150" aria-label="Relative tilt over time with the 2 degree baseline" data-i18n-aria="trend.aria"></canvas>
+      <p class="chart-note" id="tilt-note" data-i18n="trend.empty">baseline 2.0° · no data yet</p>
     </section>
 
     <section class="block">
-      <h2>Loading <span class="hsub">rain per interval · soil %</span></h2>
-      <canvas id="chart-load" height="118" aria-label="Rainfall bars and soil moisture over time"></canvas>
+      <h2><span data-i18n="load.title">Loading</span> <span class="hsub" data-i18n="load.sub">rain per interval · soil %</span></h2>
+      <canvas id="chart-load" height="118" aria-label="Rainfall bars and soil moisture over time" data-i18n-aria="load.aria"></canvas>
       <p class="chart-note" id="load-note">—</p>
     </section>
 
-    <section class="block trust">
-      <h2>Trust <span class="hsub" id="quality">—</span></h2>
+    <details class="more">
+      <summary><span data-i18n="more.summary">Node health &amp; system</span><span class="hsub" id="quality"></span></summary>
       <table class="nodes">
-        <caption class="sr-only">Node health</caption>
+        <caption class="sr-only" data-i18n="nodes.caption">Node health</caption>
         <thead>
-          <tr><th scope="col">Node</th><th scope="col">Seq</th><th scope="col">Age</th><th scope="col">Batt</th><th scope="col">RSSI</th></tr>
+          <tr><th scope="col" data-i18n="nodes.node">Node</th><th scope="col" data-i18n="nodes.seq">Seq</th><th scope="col" data-i18n="nodes.age">Age</th><th scope="col" data-i18n="nodes.batt">Batt</th><th scope="col" data-i18n="nodes.rssi">RSSI</th></tr>
         </thead>
         <tbody id="nodes"></tbody>
       </table>
       <ul class="facts">
-        <li><span>Decision rule</span><b id="fact-rule">evidence baseline</b></li>
-        <li><span>Horizon</span><b>30 min</b></li>
-        <li><span>ML model</span><b id="fact-model">not wired</b></li>
-        <li><span>Ingest</span><b id="fact-ingest">—</b></li>
-        <li><span>Rejected</span><b id="fact-rejects">—</b></li>
+        <li><span data-i18n="facts.rule">Decision rule</span><b id="fact-rule">evidence baseline</b></li>
+        <li><span data-i18n="facts.horizon">Horizon</span><b data-i18n="facts.horizon.value">30 min</b></li>
+        <li><span data-i18n="facts.model">ML model</span><b id="fact-model">not wired</b></li>
+        <li><span data-i18n="facts.ingest">Connection</span><b id="fact-ingest">—</b></li>
+        <li><span data-i18n="facts.rejects">Rejected</span><b id="fact-rejects">—</b></li>
       </ul>
-    </section>
+    </details>
     <p id="source-note" class="source-note" hidden></p>
   </aside>
 
@@ -155,13 +156,13 @@
     <div class="strip-head">
       <span class="strip-label mono" id="cursor-label">LIVE</span>
       <div class="strip-actions">
-        <button id="live-btn" class="ghost" type="button">Live</button>
-        <button id="storm-btn" class="primary" type="button">Replay storm</button>
-        <button id="dry-btn" class="ghost" type="button">Dry control</button>
+        <button id="live-btn" class="ghost" type="button" data-i18n="strip.live">Live</button>
+        <button id="storm-btn" class="ghost" type="button" data-i18n="strip.storm" data-i18n-title="strip.storm.title">Storm demo</button>
+        <button id="dry-btn" class="ghost" type="button" data-i18n="strip.dry" data-i18n-title="strip.dry.title">Calm demo</button>
       </div>
     </div>
     <div class="scrub-wrap">
-      <input id="scrub" type="range" min="0" max="0" value="0" step="1" aria-label="Time cursor, drag to inspect a moment">
+      <input id="scrub" type="range" min="0" max="0" value="0" step="1" aria-label="Time cursor, drag to inspect a moment" data-i18n-aria="scrub.aria">
       <div class="marks" aria-hidden="true">
         <i id="mark-rain" class="mark mark-rain" hidden></i>
         <i id="mark-tilt" class="mark mark-tilt" hidden></i>
@@ -173,20 +174,57 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<dialog id="help" class="help">
-  <h2>Controls</h2>
-  <dl>
-    <div><dt><kbd>R</kbd></dt><dd>Replay the synthetic storm through the live receiver (needs a clean database to change anything)</dd></div>
-    <div><dt><kbd>D</kbd></dt><dd>Replay the calm control fixture recorded 25 minutes after the storm</dd></div>
-    <div><dt><kbd>L</kbd></dt><dd>Return the cursor to live</dd></div>
-    <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Step through the recording</dd></div>
-    <div><dt><kbd>?</kbd></dt><dd>Open or close this panel</dd></div>
-  </dl>
-  <p class="help-note">The verdict is an evidence baseline, not a trained model score. Synthetic fixtures are labelled; do not cite them as field results.</p>
-  <button id="help-close" class="ghost" type="button">Close</button>
+<dialog id="lang-pick" class="help lang-pick">
+  <h2>Choose language</h2>
+  <p class="lang-sub" lang="id">Pilih bahasa</p>
+  <div class="lang-buttons">
+    <button type="button" class="ghost" data-lang="id" lang="id">Bahasa Indonesia</button>
+    <button type="button" class="ghost" data-lang="en" lang="en">English</button>
+  </div>
+  <p class="lang-note" id="lang-tour-note" hidden>A short tour follows · Tur singkat menyusul</p>
 </dialog>
 
-<noscript><p class="noscript">This dashboard needs JavaScript. The API is still readable at <code>/api/data</code>.</p></noscript>
+<dialog id="help" class="help">
+  <h2 data-i18n="help.title">Guide</h2>
+  <p class="help-intro" data-i18n="help.intro">SlopeGuard watches a hillside and tells you, in plain words, whether the slope is stable or starting to move.</p>
+  <ul class="legend">
+    <li><i class="s-stable" aria-hidden="true"></i><b data-i18n="state.STABLE">STABLE</b><span data-i18n="help.legend.stable">no concerning movement</span></li>
+    <li><i class="s-watch" aria-hidden="true"></i><b data-i18n="state.WATCH">WATCH</b><span data-i18n="help.legend.watch">rain or soil is loading the slope</span></li>
+    <li><i class="s-risk" aria-hidden="true"></i><b data-i18n="state.MOVEMENT_RISK">MOVEMENT RISK</b><span data-i18n="help.legend.risk">slope is tilting and rising</span></li>
+    <li><i class="s-unknown" aria-hidden="true"></i><b data-i18n="state.UNKNOWN">UNVERIFIED</b><span data-i18n="help.legend.unknown">data is missing or stale</span></li>
+  </ul>
+  <button id="tour-btn" class="primary" type="button" data-i18n="help.tour">Show me around</button>
+  <details class="help-keys">
+    <summary data-i18n="help.keys">Keyboard shortcuts</summary>
+    <dl>
+      <div><dt><kbd>R</kbd></dt><dd data-i18n="help.r">Play the storm demo to see how the dashboard reacts to heavy rain.</dd></div>
+      <div><dt><kbd>D</kbd></dt><dd data-i18n="help.d">Play the calm demo to see a normal day.</dd></div>
+      <div><dt><kbd>L</kbd></dt><dd data-i18n="help.l">Return the cursor to live</dd></div>
+      <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd data-i18n="help.arrows">Step through the recording</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="help.q">Open or close this panel</dd></div>
+    </dl>
+  </details>
+  <p class="help-note" data-i18n="help.note">This verdict comes from a simple rule, not a trained AI model. Demo recordings are not field results.</p>
+  <button id="help-close" class="ghost" type="button" data-i18n="help.close">Close</button>
+</dialog>
+
+<div id="tour" class="tour" hidden>
+  <div id="tour-spot" class="tour-spot" aria-hidden="true"></div>
+  <div id="tour-panel" class="tour-panel" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body">
+    <p class="tour-count mono" id="tour-count"></p>
+    <h2 id="tour-title"></h2>
+    <p class="tour-body" id="tour-body"></p>
+    <div class="tour-actions">
+      <button id="tour-skip" class="ghost" type="button">Skip tour</button>
+      <span class="tour-nav">
+        <button id="tour-prev" class="ghost" type="button">Back</button>
+        <button id="tour-next" class="primary" type="button">Next</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<noscript><p class="noscript"><span data-i18n="noscript">This dashboard needs JavaScript. The API is still readable at</span> <code>/api/data</code>.</p></noscript>
 <script src="/app.js" type="module"></script>
 </body>
 </html>

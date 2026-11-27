@@ -13,25 +13,323 @@ const LEVEL_DEG = 2.0; // mirrors analysis::BaselineConfig::default().relative_p
 const TILT_DRAW = 4; // visual exaggeration, labelled on the scene
 const WINDOW_S = 1800;
 
-const REASON_TEXT = {
-  NO_ABNORMAL_SIGNAL: "no abnormal signal",
-  REL_TILT_ABOVE_BASELINE: "relative tilt ≥ 2.0°",
-  TILT_RATE_RISING: "tilt rate ≥ 0.2°/min",
-  RAINFALL_LOADING: "rain ≥ 5 mm / 15 min",
-  SOIL_MOISTURE_RISING: "soil moisture rising",
-  REFERENCE_STALE: "reference node stale or faulted",
-  NO_DATA: "no packets in window",
-  DB_UNAVAILABLE: "database unavailable",
+const I18N = {
+  en: {
+    "page.title": "SlopeGuard — slope movement watch",
+    "skip": "Skip to evidence",
+    "brand.sub": "rainfall-induced slope-movement early warning",
+    "help.shortcuts": "Guide",
+    "help.open.title": "Open the guide",
+    "lang.switch": "Switch to Bahasa Indonesia",
+    "site.none": "no site",
+    "ingest.up": "connected",
+    "ingest.down": "offline",
+    "ingest.wait": "connecting …",
+    "clock.title": "site clock, latest packet",
+    "svg.title": "Site cross-section",
+    "svg.desc": "A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.",
+    "svg.reference": "REFERENCE",
+    "svg.movement": "MOVEMENT",
+    "scene.note": "relative tilt drawn ×4 · dashed line is true level",
+    "verdict.loading": "Connecting to the site…",
+    "reasons.aria": "Reason codes",
+    "gauges.rel": "Relative tilt",
+    "gauges.rain": "Rain · 15 min",
+    "gauges.soil": "Soil moisture",
+    "gauges.rate": "Tilt rate",
+    "unit.rate": "°/min",
+    "trend.title": "Risk trend",
+    "trend.sub": "movement − reference, degrees",
+    "trend.aria": "Relative tilt over time with the 2 degree baseline",
+    "trend.empty": "baseline 2.0° · no data yet",
+    "load.title": "Loading",
+    "load.sub": "rain per interval · soil %",
+    "load.aria": "Rainfall bars and soil moisture over time",
+    "load.empty": "no packets in this window",
+    "more.summary": "Sensors & system",
+    "nodes.caption": "Sensor health",
+    "nodes.node": "Sensor",
+    "nodes.seq": "Packet",
+    "nodes.age": "Seen",
+    "nodes.batt": "Battery",
+    "nodes.rssi": "Signal",
+    "nodes.empty": "no accepted packets yet",
+    "role.movement": "slope sensor",
+    "role.reference": "reference sensor",
+    "facts.rule": "How it decides",
+    "facts.horizon": "Forecast window",
+    "facts.model": "AI model",
+    "facts.ingest": "Connection",
+    "facts.rejects": "Bad packets",
+    "facts.rejects.none": "no rejects recorded",
+    "facts.rule.value": "rule-based (no AI)",
+    "facts.horizon.value": "30 min",
+    "model.live": "AI model running",
+    "model.report": "AI report ready, rule used",
+    "model.none": "AI not connected, rule used",
+    "quality.MISSING": "no sensor data",
+    "quality.DEGRADED": "sensor data unreliable",
+    "strip.live": "Live",
+    "strip.storm": "Storm demo",
+    "strip.storm.title": "Replay a recorded storm to watch the dashboard react",
+    "strip.dry": "Calm demo",
+    "strip.dry.title": "Replay a calm recording to see a normal day",
+    "strip.liveEdge": "LIVE EDGE",
+    "strip.viewing": "VIEWING {time}",
+    "scrub.aria": "Time cursor, drag to inspect a moment",
+    "mark.rain": "rain onset {time}",
+    "mark.tilt": "2° crossed {time}",
+    "chart.noPackets": "no movement packets in this window",
+    "chart.soil": "soil %",
+    "chart.bars": "bars rainfall per 10 s packet (peak <b>{peak} mm</b>) · line soil <b>{from} → {to}</b>",
+    "chart.baseline": "baseline <b>{thr}°</b> · now <b>{rel}</b> · {n} packets above",
+    "chart.baseline1": "baseline <b>{thr}°</b> · now <b>{rel}</b> · 1 packet above",
+    "state.STABLE": "STABLE",
+    "state.WATCH": "WATCH",
+    "state.MOVEMENT_RISK": "MOVEMENT RISK",
+    "state.CRITICAL": "CRITICAL",
+    "state.UNKNOWN": "UNVERIFIED",
+    "sentence.STABLE": "Movement stays inside the baseline. Keep watching.",
+    "sentence.WATCH": "Rain or soil moisture is rising. No confirmed movement yet.",
+    "sentence.MOVEMENT_RISK": "Relative tilt is above baseline and still rising.",
+    "sentence.CRITICAL": "Independent movement evidence recorded.",
+    "sentence.UNKNOWN": "Sensor data is missing or stale, so SlopeGuard cannot judge the slope right now.",
+    "reason.NO_ABNORMAL_SIGNAL": "no abnormal signal",
+    "reason.REL_TILT_ABOVE_BASELINE": "relative tilt ≥ 2.0°",
+    "reason.TILT_RATE_RISING": "tilt rate ≥ 0.2°/min",
+    "reason.RAINFALL_LOADING": "rain ≥ 5 mm / 15 min",
+    "reason.SOIL_MOISTURE_RISING": "soil moisture rising",
+    "reason.REFERENCE_STALE": "reference sensor is stale or faulty",
+    "reason.NO_DATA": "no sensor packets in the window",
+    "reason.DB_UNAVAILABLE": "data store unavailable",
+    "verdict.apiDown": "The dashboard service cannot be reached. Retrying every 2 seconds.",
+    "verdict.dbMissing": "The data store is not ready. Try a demo below.",
+    "verdict.noData": "No sensor data yet. Make sure the sensor is powered and connected — or try a demo below.",
+    "stale.none": "NO DATA YET — nothing has arrived. Try a demo below or power the sensor.",
+    "stale.fault": "SENSOR FAULT — {node} reports {status}. Measurements are not trusted.",
+    "stale.stale": "STALE — newest packet {age} old. Values shown are the last known, not current.",
+    "source.note": "Demo recording. Not live field data.",
+    "toast.storm": "Storm replay",
+    "toast.dry": "Dry control",
+    "toast.start": "{label}: playing the recording…",
+    "toast.done": "{label}: {accepted} new packets · {duplicate} already loaded · {rejected} failed",
+    "toast.stored": " — this demo was already loaded. Reset the demo to watch it again.",
+    "toast.failed": "Demo failed: {error}. Check the demo service and try again.",
+    "help.title": "Guide",
+    "help.intro": "SlopeGuard watches a hillside and tells you, in plain words, whether the slope is stable or starting to move.",
+    "help.legend.stable": "no concerning movement",
+    "help.legend.watch": "rain or soil is loading the slope",
+    "help.legend.risk": "slope is tilting and rising",
+    "help.legend.unknown": "data is missing or stale",
+    "help.tour": "Show me around",
+    "help.keys": "Keyboard shortcuts",
+    "help.r": "Play the storm demo to see how the dashboard reacts to heavy rain.",
+    "help.d": "Play the calm demo to see a normal day.",
+    "help.l": "Return the cursor to live",
+    "help.arrows": "Step through the recording",
+    "help.q": "Open or close this panel",
+    "help.note": "This verdict comes from a simple rule, not a trained AI model. Demo recordings are not field results.",
+    "help.close": "Close",
+    "lang.btn.toId": "Bahasa",
+    "lang.btn.toEn": "English",
+    "tour.count": "{n} of {total}",
+    "tour.next": "Next",
+    "tour.back": "Back",
+    "tour.skip": "Skip tour",
+    "tour.done": "Finish",
+    "tour.verdict.title": "The verdict",
+    "tour.verdict.body": "The big word is the current call. STABLE means no concerning movement; WATCH means rain or soil is loading the slope; MOVEMENT RISK means the slope is tilting. UNVERIFIED means data is missing or stale, so no call is possible. The sentence below explains why.",
+    "tour.gauges.title": "Four numbers",
+    "tour.gauges.body": "Tilt compares the slope sensor with the reference sensor. Rain is the last 15 minutes. Soil is moisture at the probe. Rate is how fast tilt changes. Hover a chart to see exact numbers.",
+    "tour.evidence.title": "History",
+    "tour.evidence.body": "The top chart tracks tilt against the 2° baseline. The bottom chart shows rain (bars) and soil moisture (line). Drag the timeline below to look back in time.",
+    "tour.more.title": "Sensors & system",
+    "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made. The slope sensor sits in the soil; the reference sensor sits on stable bedrock.",
+    "tour.strip.title": "Demos & timeline",
+    "tour.strip.body": "Storm demo and Calm demo replay recordings so you can watch the dashboard react. Live returns the timeline to real time. These are demos, not field forecasts.",
+    "tour.lang.title": "Language",
+    "tour.lang.body": "Click here to switch between English and Bahasa Indonesia at any time. Your choice is remembered.",
+    "noscript": "This dashboard needs JavaScript. The API is still readable at",
+  },
+  id: {
+    "page.title": "SlopeGuard — pemantauan pergerakan lereng",
+    "skip": "Langsung ke bukti",
+    "brand.sub": "peringatan dini pergerakan lereng akibat hujan",
+    "help.shortcuts": "Panduan",
+    "help.open.title": "Buka panduan",
+    "lang.switch": "Ganti ke Bahasa Inggris",
+    "site.none": "tanpa situs",
+    "ingest.up": "online",
+    "ingest.down": "offline",
+    "ingest.wait": "menghubungkan …",
+    "clock.title": "jam situs, paket terbaru",
+    "svg.title": "Penampang situs",
+    "svg.desc": "Lereng tanah di atas batuan dasar. Sensor pergerakan tertanam di tanah, sensor referensi di batuan dasar. Kedua tiang miring sesuai sudut terukur; hujan dan muka air tanah mengikuti data sensor.",
+    "svg.reference": "REFERENSI",
+    "svg.movement": "PERGERAKAN",
+    "scene.note": "tilt relatif digambar ×4 · garis putus-putus = level sebenarnya",
+    "verdict.loading": "Menghubungkan ke situs…",
+    "reasons.aria": "Kode alasan",
+    "gauges.rel": "Tilt relatif",
+    "gauges.rain": "Hujan · 15 menit",
+    "gauges.soil": "Kelembapan tanah",
+    "gauges.rate": "Laju tilt",
+    "unit.rate": "°/menit",
+    "trend.title": "Tren risiko",
+    "trend.sub": "pergerakan − referensi, derajat",
+    "trend.aria": "Tilt relatif dari waktu ke waktu dengan baseline 2 derajat",
+    "trend.empty": "baseline 2.0° · belum ada data",
+    "load.title": "Beban",
+    "load.sub": "hujan per interval · kelembapan %",
+    "load.aria": "Batang hujan dan kelembapan tanah dari waktu ke waktu",
+    "load.empty": "tidak ada paket di jendela ini",
+    "more.summary": "Sensor & sistem",
+    "nodes.caption": "Kesehatan sensor",
+    "nodes.node": "Sensor",
+    "nodes.seq": "Paket",
+    "nodes.age": "Terakhir",
+    "nodes.batt": "Baterai",
+    "nodes.rssi": "Sinyal",
+    "nodes.empty": "belum ada paket diterima",
+    "role.movement": "sensor slope",
+    "role.reference": "sensor referensi",
+    "facts.rule": "Dasar keputusan",
+    "facts.horizon": "Horizon prediksi",
+    "facts.model": "Model AI",
+    "facts.ingest": "Koneksi",
+    "facts.rejects": "Paket ditolak",
+    "facts.rejects.none": "belum ada penolakan",
+    "facts.rule.value": "berbasis aturan (belum AI)",
+    "facts.horizon.value": "30 menit",
+    "model.live": "model AI aktif",
+    "model.report": "laporan AI siap, aturan dipakai",
+    "model.none": "AI belum terhubung, aturan dipakai",
+    "quality.MISSING": "belum ada data sensor",
+    "quality.DEGRADED": "data sensor tidak valid",
+    "strip.live": "Live",
+    "strip.storm": "Demo badai",
+    "strip.storm.title": "Putar rekaman badai untuk melihat reaksi dashboard",
+    "strip.dry": "Demo tenang",
+    "strip.dry.title": "Putar rekaman hari tenang untuk melihat kondisi normal",
+    "strip.liveEdge": "LIVE",
+    "strip.viewing": "LIHAT {time}",
+    "scrub.aria": "Kursor waktu, geser untuk melihat momen tertentu",
+    "mark.rain": "awal hujan {time}",
+    "mark.tilt": "melewati 2° {time}",
+    "chart.noPackets": "tidak ada paket pergerakan di jendela ini",
+    "chart.soil": "kelembapan %",
+    "chart.bars": "batang = hujan per paket 10 detik (puncak <b>{peak} mm</b>) · garis = kelembapan <b>{from} → {to}</b>",
+    "chart.baseline": "baseline <b>{thr}°</b> · sekarang <b>{rel}</b> · {n} paket di atas",
+    "chart.baseline1": "baseline <b>{thr}°</b> · sekarang <b>{rel}</b> · 1 paket di atas",
+    "state.STABLE": "AMAN",
+    "state.WATCH": "WASPADA",
+    "state.MOVEMENT_RISK": "RISIKO PERGERAKAN",
+    "state.CRITICAL": "KRITIS",
+    "state.UNKNOWN": "DATA TIDAK VALID",
+    "sentence.STABLE": "Pergerakan masih di bawah baseline. Tetap pantau.",
+    "sentence.WATCH": "Curah hujan atau kelembapan tanah naik. Belum ada pergerakan yang terkonfirmasi.",
+    "sentence.MOVEMENT_RISK": "Tilt relatif di atas baseline dan masih naik.",
+    "sentence.CRITICAL": "Terdeteksi bukti pergerakan independen.",
+    "sentence.UNKNOWN": "Data sensor hilang atau kedaluwarsa, jadi SlopeGuard belum bisa menilai lereng saat ini.",
+    "reason.NO_ABNORMAL_SIGNAL": "tidak ada sinyal abnormal",
+    "reason.REL_TILT_ABOVE_BASELINE": "tilt relatif ≥ 2.0°",
+    "reason.TILT_RATE_RISING": "laju tilt ≥ 0.2°/menit",
+    "reason.RAINFALL_LOADING": "hujan ≥ 5 mm / 15 menit",
+    "reason.SOIL_MOISTURE_RISING": "kelembapan tanah naik",
+    "reason.REFERENCE_STALE": "sensor referensi tidak mengirim data baru",
+    "reason.NO_DATA": "tidak ada paket sensor di jendela",
+    "reason.DB_UNAVAILABLE": "database tidak tersedia",
+    "verdict.apiDown": "Layanan dashboard tidak dapat dihubungi. Mencoba lagi tiap 2 detik.",
+    "verdict.dbMissing": "Database belum siap. Coba demo di bawah.",
+    "verdict.noData": "Belum ada data sensor. Pastikan sensor menyala dan terhubung — atau coba demo di bawah.",
+    "stale.none": "BELUM ADA DATA — belum ada data yang masuk. Coba demo di bawah atau nyalakan sensor.",
+    "stale.fault": "GANGGUAN SENSOR — {node} melaporkan {status}. Pengukuran tidak dapat dipercaya.",
+    "stale.stale": "DATA LAMA — paket terbaru berumur {age}. Nilai yang tampil adalah data terakhir, bukan kondisi saat ini.",
+    "source.note": "Rekaman demo. Bukan data lapangan langsung.",
+    "toast.storm": "Demo badai",
+    "toast.dry": "Demo tenang",
+    "toast.start": "{label}: memutar rekaman…",
+    "toast.done": "{label}: {accepted} paket baru · {duplicate} sudah dimuat · {rejected} gagal",
+    "toast.stored": " — demo ini sudah pernah dimuat. Reset demo untuk menontonnya lagi.",
+    "toast.failed": "Demo gagal: {error}. Periksa layanan demo lalu coba lagi.",
+    "help.title": "Panduan",
+    "help.intro": "SlopeGuard memantau lereng dan memberi tahu dengan bahasa sederhana apakah lereng aman atau mulai bergerak.",
+    "help.legend.stable": "tidak ada pergerakan yang mengkhawatirkan",
+    "help.legend.watch": "hujan atau tanah membebani lereng",
+    "help.legend.risk": "lereng miring dan terus naik",
+    "help.legend.unknown": "data hilang atau sudah lama",
+    "help.tour": "Tunjukkan cara pakai",
+    "help.keys": "Shortcut keyboard",
+    "help.r": "Putar demo badai untuk melihat reaksi dashboard saat hujan lebat.",
+    "help.d": "Putar demo tenang untuk melihat kondisi hari normal.",
+    "help.l": "Kembalikan kursor ke mode live",
+    "help.arrows": "Maju atau mundur satu paket data",
+    "help.q": "Buka atau tutup panel ini",
+    "help.note": "Status ini berasal dari aturan sederhana, bukan model AI terlatih. Rekaman demo bukan hasil lapangan.",
+    "help.close": "Tutup",
+    "lang.btn.toId": "Bahasa",
+    "lang.btn.toEn": "English",
+    "tour.count": "{n} dari {total}",
+    "tour.next": "Lanjut",
+    "tour.back": "Kembali",
+    "tour.skip": "Lewati tur",
+    "tour.done": "Selesai",
+    "tour.verdict.title": "Status",
+    "tour.verdict.body": "Kata besar ini adalah status saat ini. AMAN berarti tidak ada pergerakan yang mengkhawatirkan; WASPADA berarti hujan atau tanah sedang membebani lereng; RISIKO PERGERAKAN berarti lereng mulai miring. DATA TIDAK VALID berarti data hilang atau kedaluwarsa sehingga belum bisa dinilai. Kalimat di bawahnya menjelaskan alasannya.",
+    "tour.gauges.title": "Empat angka",
+    "tour.gauges.body": "Tilt membandingkan sensor slope dengan sensor referensi. Hujan adalah 15 menit terakhir. Tanah adalah kelembapan di probe. Laju adalah kecepatan perubahan tilt. Arahkan kursor ke grafik untuk angka pastinya.",
+    "tour.evidence.title": "Riwayat",
+    "tour.evidence.body": "Grafik atas melacak tilt terhadap baseline 2°. Grafik bawah menampilkan hujan (batang) dan kelembapan tanah (garis). Geser timeline di bawah untuk melihat kejadian sebelumnya.",
+    "tour.more.title": "Sensor & sistem",
+    "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan. Sensor slope tertanam di tanah; sensor referensi di batuan dasar yang stabil.",
+    "tour.strip.title": "Demo & timeline",
+    "tour.strip.body": "Demo badai dan demo tenang memutar rekaman agar Anda melihat reaksi dashboard. Live mengembalikan timeline ke waktu nyata. Ini demo, bukan prakiraan lapangan.",
+    "tour.lang.title": "Bahasa",
+    "tour.lang.body": "Klik di sini untuk berganti antara Bahasa Indonesia dan Inggris kapan saja. Pilihan Anda diingat.",
+    "noscript": "Dashboard ini membutuhkan JavaScript. API tetap bisa dibaca di",
+  },
 };
 
-const SENTENCE = {
-  STABLE: "Movement stays inside the baseline. Keep watching.",
-  WATCH: "Loading is rising. No confirmed movement yet.",
-  MOVEMENT_RISK: "Relative tilt is above baseline and still rising.",
-  CRITICAL: "Independent movement evidence recorded.",
-  UNKNOWN: "The measurement cannot be trusted right now.",
-  LOADING: "Connecting to the site…",
-};
+const storedLang = (() => {
+  try {
+    const saved = localStorage.getItem("sg-lang");
+    if (saved === "en" || saved === "id") return saved;
+  } catch {}
+  return null;
+})();
+
+let lang = storedLang ?? ((navigator.language || "").toLowerCase().startsWith("id") ? "id" : "en");
+
+function storeLang(value) {
+  try {
+    localStorage.setItem("sg-lang", value);
+  } catch {}
+}
+
+function t(key, vars) {
+  let s = I18N[lang]?.[key] ?? I18N.en[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = lang;
+  document.title = t("page.title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAria));
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  const btn = $("#lang-btn");
+  btn.textContent = t(lang === "en" ? "lang.btn.toId" : "lang.btn.toEn");
+  btn.title = t("lang.switch");
+  btn.lang = lang === "en" ? "id" : "en";
+  render();
+}
 
 const fmt = (v, digits = 2, unit = "") =>
   v === null || v === undefined || !Number.isFinite(v) ? "—" : `${v.toFixed(digits)}${unit}`;
@@ -40,9 +338,10 @@ const signed = (v, digits = 2, unit = "") =>
     ? "—"
     : `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(digits)}${unit}`;
 
+const locale = () => (lang === "id" ? "id-ID" : "en-US");
 const clock = (t) =>
-  new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-const hhmm = (t) => new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  new Date(t * 1000).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const hhmm = (t) => new Date(t * 1000).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
 const ago = (s) => {
   if (s === null || s === undefined) return "—";
   if (s < 60) return `${Math.max(0, Math.round(s))} s`;
@@ -67,16 +366,16 @@ function activeIndex() {
 function renderVerdict() {
   const d = state.data;
   const rule = d?.rule;
-  const st = state.error && !d ? "UNKNOWN" : (rule?.state ?? "UNKNOWN");
+  const st = state.error && !d ? "UNKNOWN" : (rule?.state ?? "LOADING");
   document.body.dataset.state = st;
 
-  $("#state-word").textContent = st.replace("_", " ");
-  let sentence = SENTENCE[st] ?? SENTENCE.UNKNOWN;
-  if (state.error && !d) sentence = "The dashboard API is unreachable. Retrying every 2 s.";
+  $("#state-word").textContent = st === "LOADING" ? "—" : t(`state.${st}`);
+  let sentence = st === "LOADING" ? t("verdict.loading") : t(`sentence.${st}`);
+  if (state.error && !d) sentence = t("verdict.apiDown");
   else if (st === "UNKNOWN" && rule?.reasons?.includes("DB_UNAVAILABLE"))
-    sentence = `No database at ${d?.db?.path ?? "data/raw/slopeguard.db"}. Start the receiver or ingest a fixture.`;
+    sentence = t("verdict.dbMissing", { path: d?.db?.path ?? "data/raw/slopeguard.db" });
   else if (st === "UNKNOWN" && rule?.reasons?.includes("NO_DATA"))
-    sentence = "No telemetry yet. Start the receiver, then replay a fixture.";
+    sentence = t("verdict.noData");
   $("#sentence").textContent = sentence;
 
   const nodes = d?.nodes ?? [];
@@ -85,24 +384,27 @@ function renderVerdict() {
   const faulted = nodes.find((n) => n.sensor_status && n.sensor_status !== "OK");
   if (!nodes.length) {
     stale.hidden = false;
-    stale.textContent = "NO TELEMETRY — nothing has reached the receiver yet. Replay a fixture or power the device.";
+    stale.textContent = t("stale.none");
   } else if (faulted) {
     stale.hidden = false;
-    stale.textContent = `SENSOR FAULT — ${faulted.node_id} reports ${faulted.sensor_status}. Measurements are not trusted.`;
+    stale.textContent = t("stale.fault", { node: faulted.node_id, status: faulted.sensor_status });
   } else if (rule?.quality !== "GOOD") {
     const worst = Math.max(...nodes.map((n) => n.age_s ?? 0));
     stale.hidden = false;
-    stale.textContent = `STALE — newest packet ${ago(worst)} old. Values shown are the last known, not current.`;
+    stale.textContent = t("stale.stale", { age: ago(worst) });
   } else {
     stale.hidden = true;
   }
   scene.classList.toggle("is-stale", !stale.hidden);
 
+  // Sparse: only explain an abnormal verdict; "no abnormal signal" says nothing.
+  const codes = (rule?.reasons ?? []).filter((code) => code !== "NO_ABNORMAL_SIGNAL");
   const reasons = $("#reasons");
+  reasons.hidden = !codes.length;
   reasons.replaceChildren(
-    ...(rule?.reasons ?? []).map((code) => {
+    ...codes.map((code) => {
       const li = document.createElement("li");
-      li.textContent = REASON_TEXT[code] ?? code;
+      li.textContent = t(`reason.${code}`);
       li.title = code;
       return li;
     }),
@@ -123,10 +425,11 @@ function renderVerdict() {
     const b = pts[back]?.[3];
     rate = a !== null && b !== null && pi - back > 0 ? (a - b) / ((pts[pi][0] - pts[back][0]) / 60) : null;
   }
-  $("#g-rate").textContent = rate === null || rate === undefined ? "—" : signed(rate, 2, "°/min");
+  $("#g-rate").textContent = rate === null || rate === undefined ? "—" : signed(rate, 2, t("unit.rate"));
 
-  $("#site").textContent = d?.nodes?.[0]?.site_id ?? "no site";
-  $("#quality").textContent = rule?.quality ? `data ${rule.quality.toLowerCase()}` : "—";
+  $("#site").textContent = d?.nodes?.[0]?.site_id ?? t("site.none");
+  // Sparse: quality is only interesting when it is not good.
+  $("#quality").textContent = rule?.quality && rule.quality !== "GOOD" ? t(`quality.${rule.quality}`) : "";
 }
 
 function sumRain(idx) {
@@ -175,7 +478,8 @@ function renderScene() {
   const rel = p ? (p[3] ?? 0) : (rule?.inputs?.rel_pitch_deg ?? 0);
   const angle = clamp(rel * TILT_DRAW, -22, 22);
 
-  $("#move-mast").setAttribute("transform", `rotate(${angle.toFixed(2)} 600 374)`);
+  // Pivot at the mast foot (fill-box bottom centre), not the view-box centre.
+  $("#move-mast").style.transform = `rotate(${angle.toFixed(2)}deg)`;
   $("#move-angle").textContent = `${rel >= 0 ? "+" : "−"}${Math.abs(rel).toFixed(2)}°`;
 
   const arcR = 56;
@@ -255,7 +559,7 @@ function drawTilt() {
   for (const v of [-top, -LEVEL_DEG, 0, LEVEL_DEG, top]) {
     if (Math.abs(v) === top) continue;
     ctx.setLineDash(v === 0 ? [] : [3, 4]);
-    ctx.strokeStyle = v === 0 ? "#4a3a2d" : v === LEVEL_DEG ? "rgba(239,95,60,0.55)" : "#2b231c";
+    ctx.strokeStyle = v === 0 ? "#5c4939" : v === LEVEL_DEG ? "rgba(239,95,60,0.55)" : "#2b231c";
     ctx.beginPath();
     ctx.moveTo(pad.l, Y(v));
     ctx.lineTo(w - pad.r, Y(v));
@@ -263,7 +567,7 @@ function drawTilt() {
   }
   ctx.setLineDash([]);
 
-  ctx.fillStyle = "#7a6d60";
+  ctx.fillStyle = "#a99b8c";
   ctx.font = MONO;
   ctx.textAlign = "right";
   ctx.fillText("+2°", pad.l - 6, Y(LEVEL_DEG) + 3);
@@ -312,13 +616,13 @@ function drawTilt() {
   }
 
   if (!pts.length) {
-    ctx.fillStyle = "#7a6d60";
+    ctx.fillStyle = "#a99b8c";
     ctx.textAlign = "center";
     ctx.font = '11px system-ui, sans-serif';
-    ctx.fillText("no movement packets in this window", w / 2, h / 2);
+    ctx.fillText(t("chart.noPackets"), w / 2, h / 2);
   }
 
-  ctx.fillStyle = "#7a6d60";
+  ctx.fillStyle = "#a99b8c";
   ctx.font = MONO;
   ctx.textAlign = "left";
   ctx.fillText(hhmm(t0), pad.l, h - 6);
@@ -349,16 +653,16 @@ function drawLoad() {
     ctx.lineTo(w - pad.r, Ys(v));
     ctx.stroke();
   }
-  ctx.fillStyle = "#7a6d60";
+  ctx.fillStyle = "#a99b8c";
   ctx.font = MONO;
   ctx.textAlign = "right";
   ctx.fillText("100", pad.l - 6, Ys(100) + 3);
   ctx.fillText("0", pad.l - 6, Ys(0) + 3);
   ctx.textAlign = "left";
-  ctx.fillText("soil %", w - pad.r + 6, Ys(100) + 3);
+  ctx.fillText(t("chart.soil"), w - pad.r + 6, Ys(100) + 3);
 
   const barW = Math.max(1, (iw / Math.max(1, pts.length)) * 0.55);
-  ctx.fillStyle = "rgba(79,143,154,0.55)";
+  ctx.fillStyle = "rgba(79,143,154,0.7)";
   for (const p of pts) {
     const v = p[5];
     if (!v) continue;
@@ -370,7 +674,7 @@ function drawLoad() {
   if (soilPts.length > 1) {
     ctx.beginPath();
     soilPts.forEach((p, i) => (i ? ctx.lineTo(X(p[0]), Ys(p[6])) : ctx.moveTo(X(p[0]), Ys(p[6]))));
-    ctx.strokeStyle = "#a19384";
+    ctx.strokeStyle = "#c4b6a6";
     ctx.lineWidth = 1.4;
     ctx.stroke();
   }
@@ -386,7 +690,7 @@ function drawLoad() {
     ctx.setLineDash([]);
   }
 
-  ctx.fillStyle = "#7a6d60";
+  ctx.fillStyle = "#a99b8c";
   ctx.font = MONO;
   ctx.textAlign = "left";
   ctx.fillText(hhmm(t0), pad.l, h - 6);
@@ -394,18 +698,28 @@ function drawLoad() {
   ctx.fillText(hhmm(t1), w - pad.r, h - 6);
 
   $("#load-note").innerHTML = pts.length
-    ? `bars rainfall per 10 s packet (peak <b>${rainMax.toFixed(2)} mm</b>) · line soil <b>${fmt(soilPts[0]?.[6], 0, "%")} → ${fmt(soilPts[soilPts.length - 1]?.[6], 0, "%")}</b>`
-    : "no packets in this window";
+    ? t("chart.bars", {
+        peak: rainMax.toFixed(2),
+        from: fmt(soilPts[0]?.[6], 0, "%"),
+        to: fmt(soilPts[soilPts.length - 1]?.[6], 0, "%"),
+      })
+    : t("load.empty");
 }
 
 function renderNotes() {
   const d = state.data;
-  const rel = d?.rule?.inputs?.rel_pitch_deg;
-  const thr = d?.rule?.thresholds?.rel_warn_deg ?? LEVEL_DEG;
-  const n = d?.rule?.inputs?.sustained_windows ?? 0;
-  $("#tilt-note").innerHTML = d
-    ? `baseline <b>${thr.toFixed(1)}°</b> · now <b>${signed(rel, 2, "°")}</b> · ${n} packet${n === 1 ? "" : "s"} above`
-    : "";
+  if (!d) {
+    $("#tilt-note").textContent = t("trend.empty");
+    return;
+  }
+  const rel = d.rule?.inputs?.rel_pitch_deg;
+  const thr = d.rule?.thresholds?.rel_warn_deg ?? LEVEL_DEG;
+  const n = d.rule?.inputs?.sustained_windows ?? 0;
+  $("#tilt-note").innerHTML = t(n === 1 ? "chart.baseline1" : "chart.baseline", {
+    thr: thr.toFixed(1),
+    rel: signed(rel, 2, "°"),
+    n,
+  });
 }
 
 /* ---------------- trust + strip ---------------- */
@@ -421,7 +735,7 @@ function renderTrust() {
           tr.dataset.role = n.node_role;
           const stale = n.age_s !== null && n.age_s > 30;
           tr.innerHTML = `
-            <td>${n.node_role}<br><span class="mono" style="color:var(--dim)">${n.node_id}</span></td>
+            <td>${t(`role.${n.node_role}`)}<br><span class="mono" style="color:var(--dim)">${n.node_id}</span></td>
             <td>${n.seq}</td>
             <td class="${stale ? "age-stale" : ""}">${ago(n.age_s)}</td>
             <td>${fmt(n.battery_v, 2)}</td>
@@ -429,22 +743,22 @@ function renderTrust() {
           return tr;
         })
       : [Object.assign(document.createElement("tr"), {
-          innerHTML: `<td colspan="5" class="empty">no accepted packets yet</td>`,
+          innerHTML: `<td colspan="5" class="empty">${t("nodes.empty")}</td>`,
         })])
   );
 
   const model = d?.model;
   $("#fact-model").textContent = model?.available
-    ? "live inference"
+    ? t("model.live")
     : model?.report_present
-      ? "report ready, rule shown"
-      : "not wired, rule shown";
-  $("#fact-rule").textContent = d?.rule?.basis === "evidence-rule" ? "evidence baseline" : (d?.rule?.basis ?? "—");
-  $("#fact-ingest").textContent = d?.receiver?.up ? "receiver up" : "receiver down";
+      ? t("model.report")
+      : t("model.none");
+  $("#fact-rule").textContent = d?.rule?.basis === "evidence-rule" ? t("facts.rule.value") : (d?.rule?.basis ?? "—");
+  $("#fact-ingest").textContent = d?.receiver?.up ? t("ingest.up") : t("ingest.down");
   $("#fact-ingest").style.color = d?.receiver?.up ? "" : "#ef5f3c";
   const rejects = d?.db?.rejects;
   $("#fact-rejects").textContent = rejects === undefined ? "—" : `${rejects}${d.db.last_reject ? ` · ${String(d.db.last_reject.reason).slice(0, 22)}` : ""}`;
-  $("#fact-rejects").title = d?.db?.last_reject ? `${d.db.last_reject.at} — ${d.db.last_reject.reason}` : "no rejects recorded";
+  $("#fact-rejects").title = d?.db?.last_reject ? `${d.db.last_reject.at} — ${d.db.last_reject.reason}` : t("facts.rejects.none");
 }
 
 function renderStrip() {
@@ -455,26 +769,27 @@ function renderStrip() {
   scrub.disabled = n < 2;
   const i = activeIndex();
   scrub.value = String(Math.max(0, i));
-  $("#cursor-label").textContent = state.cursor === null ? "LIVE EDGE" : `VIEWING ${clock(pts[i][0])}`;
+  $("#cursor-label").textContent =
+    state.cursor === null ? t("strip.liveEdge") : t("strip.viewing", { time: clock(pts[i][0]) });
   $("#cursor-label").classList.toggle("at", state.cursor !== null);
   document.querySelectorAll(".mark").forEach((m) => (m.hidden = true));
 
   if (n > 1) {
     const [t0, t1] = xDomain();
-    const pct = (t) => clamp(((t - t0) / (t1 - t0)) * 100, 0, 100);
+    const pct = (time) => clamp(((time - t0) / (t1 - t0)) * 100, 0, 100);
     const firstRain = pts.find((p) => (p[5] ?? 0) > 0.01);
     const firstTilt = pts.find((p) => (p[3] ?? 0) >= LEVEL_DEG);
     if (firstRain) {
       const m = $("#mark-rain");
       m.hidden = false;
       m.style.left = `${pct(firstRain[0])}%`;
-      m.title = `rain onset ${clock(firstRain[0])}`;
+      m.title = t("mark.rain", { time: clock(firstRain[0]) });
     }
     if (firstTilt) {
       const m = $("#mark-tilt");
       m.hidden = false;
       m.style.left = `${pct(firstTilt[0])}%`;
-      m.title = `2° crossed ${clock(firstTilt[0])}`;
+      m.title = t("mark.tilt", { time: clock(firstTilt[0]) });
     }
     $("#t-start").textContent = clock(t0);
     $("#t-end").textContent = clock(t1);
@@ -482,9 +797,10 @@ function renderStrip() {
     $("#t-start").textContent = "—";
     $("#t-end").textContent = "—";
   }
-  $("#live-btn").disabled = state.cursor === null;
+  // Sparse: the Live button only exists when you have left live.
+  $("#live-btn").hidden = state.cursor === null;
   $("#clock").textContent = n ? clock(pts[Math.max(0, i)][0]) : "--:--:--";
-  $("#clock").title = "site clock, latest packet";
+  $("#clock").title = t("clock.title");
 }
 
 /* ---------------- render ---------------- */
@@ -498,8 +814,11 @@ function render() {
   renderNotes();
   renderTrust();
   renderStrip();
-  $("#ingest-dot").className = `dot ${state.data?.receiver?.up ? "on" : "off"}`;
-  $("#ingest-text").textContent = state.data?.receiver?.up ? "receiver up" : "receiver down";
+  const up = state.data?.receiver?.up;
+  $("#ingest-dot").className = `dot ${up ? "on" : "off"}`;
+  $("#ingest-text").textContent = up ? t("ingest.up") : t("ingest.down");
+  $("#ingest-text").hidden = !!up;
+  $("#ingest").title = up ? t("ingest.up") : t("ingest.down");
 }
 
 /* ---------------- data ---------------- */
@@ -539,11 +858,12 @@ function toast(message, kind = "") {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function replay(scenario, label, btn) {
+async function replay(scenario, labelKey, btn) {
   if (state.replaying) return;
   state.replaying = true;
   btn.disabled = true;
-  toast(`${label}: pushing the synthetic fixture through the receiver…`);
+  const label = t(labelKey);
+  toast(t("toast.start", { label }));
   try {
     const res = await fetch("/api/replay", {
       method: "POST",
@@ -555,21 +875,25 @@ async function replay(scenario, label, btn) {
     const extra = body.errors?.length ? ` — ${body.errors[0]}` : "";
     const nothingNew = body.pushed > 0 && body.accepted === 0;
     toast(
-      `${label}: ${body.pushed} pushed · ${body.accepted} accepted · ${body.duplicate} duplicate · ${body.rejected} rejected${extra}` +
-        (nothingNew ? " — this fixture is already stored. Run ./run.sh demo reset for a clean run." : ""),
+      t("toast.done", {
+        label,
+        accepted: body.accepted,
+        duplicate: body.duplicate,
+        rejected: body.rejected,
+      }) +
+        extra +
+        (nothingNew ? t("toast.stored") : ""),
       body.rejected || body.errors?.length ? "err" : nothingNew ? "warn" : "",
     );
     $("#source-note").hidden = false;
-    $("#source-note").textContent =
-      "Synthetic fixture pushed through the live receiver. Pipeline demo, not field data.";
+    $("#source-note").textContent = t("source.note");
     state.cursor = null;
     for (let i = 0; i < 10; i++) {
       await sleep(320);
       await refresh();
     }
   } catch (err) {
-    const target = state.data?.receiver?.url ?? "127.0.0.1:8080";
-    toast(`Replay failed: ${err.message}. Is slopeguard serve running on ${target}?`, "err");
+    toast(t("toast.failed", { error: err.message }), "err");
   } finally {
     state.replaying = false;
     btn.disabled = false;
@@ -589,6 +913,95 @@ function goLive() {
   render();
 }
 
+/* ---------------- guided tour ---------------- */
+
+const TOUR = [
+  { sel: ".verdict", key: "verdict" },
+  { sel: ".gauges", key: "gauges" },
+  { sel: "#evidence", key: "evidence" },
+  { sel: "details.more", key: "more", open: true },
+  { sel: ".strip", key: "strip" },
+  { sel: "#lang-btn", key: "lang" },
+];
+
+let tourIndex = 0;
+let tourTarget = null;
+
+function startTour() {
+  if (!$("#tour").hidden) return;
+  tourIndex = 0;
+  $("#tour").hidden = false;
+  document.querySelector(".bar").inert = true;
+  document.querySelector(".shell").inert = true;
+  document.body.classList.add("touring");
+  showTourStep();
+}
+
+function showTourStep() {
+  const step = TOUR[tourIndex];
+  const el = document.querySelector(step.sel);
+  tourTarget = el;
+  if (step.open) el.open = true;
+  el.scrollIntoView({ block: "center", inline: "nearest" });
+  $("#tour-title").textContent = t(`tour.${step.key}.title`);
+  $("#tour-body").textContent = t(`tour.${step.key}.body`);
+  $("#tour-count").textContent = t("tour.count", { n: tourIndex + 1, total: TOUR.length });
+  $("#tour-prev").disabled = tourIndex === 0;
+  $("#tour-prev").textContent = t("tour.back");
+  $("#tour-skip").textContent = t("tour.skip");
+  $("#tour-next").textContent = tourIndex === TOUR.length - 1 ? t("tour.done") : t("tour.next");
+  requestAnimationFrame(() => positionTour(el));
+  $("#tour-next").focus({ preventScroll: true });
+}
+
+function positionTour(el) {
+  if (!el) return;
+  const pad = 8;
+  const r = el.getBoundingClientRect();
+  const spot = $("#tour-spot");
+  spot.style.left = `${Math.max(0, r.left - pad)}px`;
+  spot.style.top = `${Math.max(0, r.top - pad)}px`;
+  spot.style.width = `${Math.min(window.innerWidth, r.width + pad * 2)}px`;
+  spot.style.height = `${r.height + pad * 2}px`;
+  $("#tour-panel").classList.toggle("top", r.top + r.height / 2 > window.innerHeight * 0.55);
+}
+
+function endTour() {
+  $("#tour").hidden = true;
+  document.querySelector(".bar").inert = false;
+  document.querySelector(".shell").inert = false;
+  document.body.classList.remove("touring");
+  try {
+    localStorage.setItem("sg-toured", "1");
+  } catch {}
+  tourTarget = null;
+  $("#help-btn")?.focus({ preventScroll: true });
+}
+
+function tourNext() {
+  if (tourIndex >= TOUR.length - 1) return endTour();
+  tourIndex += 1;
+  showTourStep();
+}
+
+function tourPrev() {
+  if (tourIndex === 0) return;
+  tourIndex -= 1;
+  showTourStep();
+}
+
+function tourDone() {
+  try {
+    return localStorage.getItem("sg-toured") === "1";
+  } catch {
+    return true;
+  }
+}
+
+function autoTour() {
+  if (!tourDone()) setTimeout(startTour, 700);
+}
+
 /* ---------------- wiring ---------------- */
 
 function wire() {
@@ -600,12 +1013,36 @@ function wire() {
   });
 
   $("#live-btn").addEventListener("click", goLive);
-  $("#storm-btn").addEventListener("click", (e) => replay("storm", "Storm replay", e.currentTarget));
-  $("#dry-btn").addEventListener("click", (e) => replay("dry", "Dry control", e.currentTarget));
+  $("#storm-btn").addEventListener("click", (e) => replay("storm", "toast.storm", e.currentTarget));
+  $("#dry-btn").addEventListener("click", (e) => replay("dry", "toast.dry", e.currentTarget));
+
+  $("#lang-btn").addEventListener("click", () => {
+    lang = lang === "en" ? "id" : "en";
+    storeLang(lang);
+    applyLanguage();
+  });
+
+  const langPick = $("#lang-pick");
+  langPick.querySelectorAll("[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      lang = btn.dataset.lang;
+      storeLang(lang);
+      langPick.close();
+      applyLanguage();
+      autoTour();
+    });
+  });
 
   const help = $("#help");
   $("#help-btn").addEventListener("click", () => help.showModal());
   $("#help-close").addEventListener("click", () => help.close());
+  $("#tour-btn").addEventListener("click", () => {
+    help.close();
+    startTour();
+  });
+  $("#tour-next").addEventListener("click", tourNext);
+  $("#tour-prev").addEventListener("click", tourPrev);
+  $("#tour-skip").addEventListener("click", endTour);
   help.addEventListener("click", (e) => {
     if (e.target === help) help.close();
   });
@@ -614,6 +1051,20 @@ function wire() {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tag = e.target.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (!$("#tour").hidden) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        endTour();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        tourNext();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        tourPrev();
+      }
+      return;
+    }
+    if (langPick.open) return;
     if (help.open && e.key !== "Escape" && e.key !== "?") return;
     switch (e.key) {
       case "?":
@@ -622,11 +1073,11 @@ function wire() {
         break;
       case "r":
       case "R":
-        replay("storm", "Storm replay", $("#storm-btn"));
+        replay("storm", "toast.storm", $("#storm-btn"));
         break;
       case "d":
       case "D":
-        replay("stable", "Dry run", $("#dry-btn"));
+        replay("dry", "toast.dry", $("#dry-btn"));
         break;
       case "l":
       case "L":
@@ -646,10 +1097,33 @@ function wire() {
   });
 
   window.addEventListener("resize", render);
+  window.addEventListener("resize", () => {
+    if (!$("#tour").hidden) positionTour(tourTarget);
+  });
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!$("#tour").hidden) positionTour(tourTarget);
+    },
+    true,
+  );
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) refresh();
   });
 
+  applyLanguage();
+  const needsTour = !tourDone();
+  $("#lang-tour-note").hidden = !needsTour;
+  if (!storedLang || needsTour) {
+    langPick.querySelectorAll("[data-lang]").forEach((btn) => {
+      const current = btn.dataset.lang === lang;
+      btn.classList.toggle("is-current", current);
+      btn.setAttribute("aria-pressed", String(current));
+    });
+    langPick.showModal();
+  } else {
+    autoTour();
+  }
   setInterval(() => {
     if (!document.hidden) refresh();
   }, 2000);
