@@ -34,7 +34,17 @@ const I18N = {
     "svg.desc": "A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.",
     "svg.reference": "REFERENCE",
     "svg.movement": "MOVEMENT",
-    "scene.note": "relative tilt drawn ×4 · dashed line is true level",
+    "scene.note": "tilt angles exaggerated ×4 to stay visible",
+    "scene.level": "true level",
+    "scene.water": "water table",
+    "scene.travel": "possible travel",
+    "legend.tilt": "Tilt",
+    "legend.baseline": "2° baseline",
+    "legend.cursor": "Time cursor",
+    "legend.rain": "Rain per packet",
+    "legend.soil": "Soil moisture",
+    "legend.rainOnset": "rain onset",
+    "legend.tiltCross": "2° crossed",
     "verdict.loading": "Connecting to the site…",
     "reasons.aria": "Reason codes",
     "gauges.rel": "Relative tilt",
@@ -146,7 +156,9 @@ const I18N = {
     "tour.gauges.title": "Four numbers",
     "tour.gauges.body": "Tilt compares the slope sensor with the reference sensor. Rain is the last 15 minutes. Soil is moisture at the probe. Rate is how fast tilt changes. Hover a chart to see exact numbers.",
     "tour.evidence.title": "History",
-    "tour.evidence.body": "The top chart tracks tilt against the 2° baseline. The bottom chart shows rain (bars) and soil moisture (line). Drag the timeline below to look back in time.",
+    "tour.scene.title": "The drawing",
+    "tour.scene.body": "The slope sensor (orange) tilts downhill as the soil moves; the reference sensor stays on stable rock. The dashed line is true level, the blue dotted curve is the water table, and the dashed orange curve shows possible travel.",
+    "tour.evidence.body": "Top chart: solid orange is tilt, dashed orange is the 2° baseline, dotted pale is the time cursor. Bottom chart: blue bars are rain per packet, the thin line is soil moisture. Drag the timeline below to look back in time.",
     "tour.more.title": "Sensors & system",
     "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made. The slope sensor sits in the soil; the reference sensor sits on stable bedrock.",
     "tour.strip.title": "Demos & timeline",
@@ -175,7 +187,17 @@ const I18N = {
     "svg.desc": "Lereng tanah di atas batuan dasar. Sensor pergerakan tertanam di tanah, sensor referensi di batuan dasar. Kedua tiang miring sesuai sudut terukur; hujan dan muka air tanah mengikuti data sensor.",
     "svg.reference": "REFERENSI",
     "svg.movement": "PERGERAKAN",
-    "scene.note": "tilt relatif digambar ×4 · garis putus-putus = level sebenarnya",
+    "scene.note": "sudut tilt diperbesar ×4 agar terlihat jelas",
+    "scene.level": "level sebenarnya",
+    "scene.water": "muka air tanah",
+    "scene.travel": "potensi pergerakan",
+    "legend.tilt": "Tilt",
+    "legend.baseline": "baseline 2°",
+    "legend.cursor": "Kursor waktu",
+    "legend.rain": "Hujan per paket",
+    "legend.soil": "Kelembapan tanah",
+    "legend.rainOnset": "awal hujan",
+    "legend.tiltCross": "lewat 2°",
     "verdict.loading": "Menghubungkan ke situs…",
     "reasons.aria": "Kode alasan",
     "gauges.rel": "Tilt relatif",
@@ -287,7 +309,9 @@ const I18N = {
     "tour.gauges.title": "Empat angka",
     "tour.gauges.body": "Tilt membandingkan sensor slope dengan sensor referensi. Hujan adalah 15 menit terakhir. Tanah adalah kelembapan di probe. Laju adalah kecepatan perubahan tilt. Arahkan kursor ke grafik untuk angka pastinya.",
     "tour.evidence.title": "Riwayat",
-    "tour.evidence.body": "Grafik atas melacak tilt terhadap baseline 2°. Grafik bawah menampilkan hujan (batang) dan kelembapan tanah (garis). Geser timeline di bawah untuk melihat kejadian sebelumnya.",
+    "tour.scene.title": "Ilustrasi lereng",
+    "tour.scene.body": "Sensor slope (oranye) miring ke bawah saat tanah bergerak; sensor referensi tetap di batuan stabil. Garis putus-putus adalah level sebenarnya, kurva biru titik-titik adalah muka air tanah, dan kurva oranye putus-putus menunjukkan potensi pergerakan.",
+    "tour.evidence.body": "Grafik atas: oranye solid adalah tilt, oranye putus-putus adalah baseline 2°, titik-titik pucat adalah kursor waktu. Grafik bawah: batang biru adalah hujan per paket, garis tipis adalah kelembapan tanah. Geser timeline di bawah untuk melihat ke belakang.",
     "tour.more.title": "Sensor & sistem",
     "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan. Sensor slope tertanam di tanah; sensor referensi di batuan dasar yang stabil.",
     "tour.strip.title": "Demo & timeline",
@@ -529,6 +553,7 @@ function renderScene() {
   if (soil !== null && soil !== undefined) {
     const y = clamp(560 - soil * 2.6, 300, 540);
     $("#water").setAttribute("d", `M0 ${y} C 220 ${y - 8} 420 ${y + 22} 900 ${y + 112}`);
+    $("#water-label").setAttribute("y", String(y + 36));
   }
 
   const rain = p ? p[5] : rule?.inputs?.rain_15m_mm ? 0.2 : 0;
@@ -825,11 +850,13 @@ function renderStrip() {
       m.style.left = `${pct(firstTilt[0])}%`;
       m.title = t("mark.tilt", { time: clock(firstTilt[0]) });
     }
+    $("#mark-key").hidden = !(firstRain || firstTilt);
     $("#t-start").textContent = clock(t0);
     $("#t-end").textContent = clock(t1);
   } else {
     $("#t-start").textContent = "—";
     $("#t-end").textContent = "—";
+    $("#mark-key").hidden = true;
   }
   // Sparse: the Live button only exists when you have left live.
   $("#live-btn").hidden = state.cursor === null;
@@ -951,6 +978,7 @@ function goLive() {
 
 const TOUR = [
   { sel: ".verdict", key: "verdict" },
+  { sel: "#slope", key: "scene" },
   { sel: ".gauges", key: "gauges" },
   { sel: "#evidence", key: "evidence" },
   { sel: "details.more", key: "more", open: true },

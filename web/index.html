@@ -66,12 +66,14 @@
 
       <!-- water table -->
       <path id="water" class="water" d="M0 470 C 220 462 420 500 900 588" fill="none" stroke="#3f7e86" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>
+      <text id="water-label" x="430" y="506" class="svg-label" text-anchor="middle" data-i18n="scene.water">water table</text>
 
       <!-- rain -->
       <g id="rain" class="rain" aria-hidden="true"></g>
 
       <!-- true level through the sensor heads -->
       <line class="level" x1="0" y1="250" x2="900" y2="250" stroke="#b09a83" stroke-width="1" stroke-dasharray="3 6" opacity="0.55"/>
+      <text x="868" y="242" class="svg-label" text-anchor="end" data-i18n="scene.level">true level</text>
 
       <!-- reference node on bedrock -->
       <g id="mast-ref">
@@ -100,6 +102,7 @@
       <!-- displacement hint -->
       <g id="ghost" opacity="0">
         <path d="M600 262 C 660 262 700 300 720 340" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 5"/>
+        <text x="654" y="332" class="svg-label" data-i18n="scene.travel">possible travel</text>
       </g>
 
     </svg>
@@ -124,12 +127,22 @@
   <aside class="rail">
     <section class="block" id="evidence" tabindex="-1">
       <h2><span data-i18n="trend.title">Risk trend</span> <span class="hsub" data-i18n="trend.sub">movement − reference, degrees</span></h2>
+      <ul class="chart-legend">
+        <li><i class="sw sw-tilt"></i><span data-i18n="legend.tilt">Tilt</span></li>
+        <li><i class="sw sw-threshold"></i><span data-i18n="legend.baseline">2° baseline</span></li>
+        <li><i class="sw sw-cursor"></i><span data-i18n="legend.cursor">Time cursor</span></li>
+      </ul>
       <canvas id="chart-tilt" height="150" aria-label="Relative tilt over time with the 2 degree baseline" data-i18n-aria="trend.aria"></canvas>
       <p class="chart-note" id="tilt-note" data-i18n="trend.empty">baseline 2.0° · no data yet</p>
     </section>
 
     <section class="block">
       <h2><span data-i18n="load.title">Loading</span> <span class="hsub" data-i18n="load.sub">rain per interval · soil %</span></h2>
+      <ul class="chart-legend">
+        <li><i class="sw sw-rain"></i><span data-i18n="legend.rain">Rain per packet</span></li>
+        <li><i class="sw sw-soil"></i><span data-i18n="legend.soil">Soil moisture</span></li>
+        <li><i class="sw sw-cursor"></i><span data-i18n="legend.cursor">Time cursor</span></li>
+      </ul>
       <canvas id="chart-load" height="118" aria-label="Rainfall bars and soil moisture over time" data-i18n-aria="load.aria"></canvas>
       <p class="chart-note" id="load-note">—</p>
     </section>
@@ -170,7 +183,11 @@
         <i id="mark-tilt" class="mark mark-tilt" hidden></i>
       </div>
     </div>
-    <div class="strip-scale mono"><span id="t-start">—</span><span id="t-end">—</span></div>
+    <div class="strip-scale mono">
+      <span id="t-start">—</span>
+      <span id="mark-key" class="strip-keys" hidden><i class="mk mk-rain"></i><span data-i18n="legend.rainOnset">rain onset</span><i class="mk mk-tilt"></i><span data-i18n="legend.tiltCross">2° crossed</span></span>
+      <span id="t-end">—</span>
+    </div>
   </footer>
 </main>
 
