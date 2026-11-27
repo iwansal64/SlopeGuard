@@ -87,7 +87,7 @@ cmd_demo() {
   wait_http "http://$DADDR/" || die "dashboard did not answer on http://$DADDR"
   say "dashboard  http://$DADDR"
   say "receiver   http://$ADDR   db=$DB"
-  say "demo page: http://$DADDR/demo.html   (or ./run.sh storm)"
+  say "demo page: http://$DADDR/demo/   (or ./run.sh storm)"
   wait $DASH_PID
 }
 
