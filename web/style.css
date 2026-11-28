@@ -16,19 +16,12 @@
   --chip-bg: rgba(19, 16, 14, 0.6);
   --gauge-fade: rgba(19, 16, 14, 0.92);
   --scene-bg: #1d1814;
-  --sky-top: #1b1714;
-  --sky-bottom: #13100e;
-  --soil-top: #33261c;
-  --soil-bottom: #241b15;
-  --bedrock: #1c1713;
-  --rock: #3b2f26;
-  --ridge: #191511;
-  --ridge-line: #2d241c;
-  --surface: #5a4635;
+  --scenery: #303a32;
+  --soil-top: #634a35;
+  --soil-bottom: #38291f;
+  --surface: #ae8960;
   --level: #b09a83;
-  --water: #3f7e86;
   --svg-text: #b09a83;
-  --metal: #8d7a67;
   --shadow: rgba(0, 0, 0, 0.55);
   --chart-grid: #2b231c;
   --chart-zero: #5c4939;
@@ -37,6 +30,7 @@
   --chart-dot: #f2ece2;
   --chart-soil: #c4b6a6;
   --chart-rain: rgba(79, 143, 154, 0.7);
+  --chart-band: rgba(239, 95, 60, 0.16);
   --mark-rain: #4f8f9a;
   --rain: #7fa7b0;
   --ok: #63c39b;
@@ -76,19 +70,12 @@ html[data-theme="light"] {
   --chip-bg: rgba(255, 253, 249, 0.58);
   --gauge-fade: rgba(246, 241, 233, 0.92);
   --scene-bg: #ece4d7;
-  --sky-top: #e9e2d6;
-  --sky-bottom: #f3eee6;
+  --scenery: #d3ddcd;
   --soil-top: #dcc7ab;
   --soil-bottom: #cdb695;
-  --bedrock: #c0af99;
-  --rock: #b8a58e;
-  --ridge: #e4dbcd;
-  --ridge-line: #cfc2b0;
   --surface: #96795a;
   --level: #8a7762;
-  --water: #2f6d75;
   --svg-text: #6d5b46;
-  --metal: #7d6852;
   --shadow: rgba(70, 50, 30, 0.18);
   --chart-grid: #e2d8ca;
   --chart-zero: #b3a390;
@@ -97,6 +84,7 @@ html[data-theme="light"] {
   --chart-dot: #1b1611;
   --chart-soil: #8a6a45;
   --chart-rain: rgba(47, 109, 117, 0.55);
+  --chart-band: rgba(185, 58, 28, 0.14);
   --mark-rain: #2f6d75;
   --rain: #5e8790;
   --ok: #237a56;
@@ -252,28 +240,71 @@ kbd {
   position: relative;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   color: var(--sig);
   border-right: 1px solid var(--line);
   background: radial-gradient(120% 90% at 70% 10%, var(--scene-bg) 0%, var(--bg) 70%);
 }
-#slope { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#slope { order: 1; flex: 1 1 0; min-height: 0; width: 100%; display: block; }
+.scenery { fill: var(--scenery); pointer-events: none; }
 .svg-label {
-  font: 12px var(--mono);
-  letter-spacing: 0.12em;
+  font: 12px var(--sans);
+  letter-spacing: 0.04em;
   fill: var(--svg-text);
   pointer-events: none;
 }
-.mast {
-  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform-box: fill-box;
-  transform-origin: 50% 100%; /* pivot at the mast foot, not the view-box centre */
+.node-tag { font-size: 14px; font-weight: 600; fill: var(--ink-2); }
+.angle-tag { font: 14px var(--mono); fill: var(--sig); }
+.sky { pointer-events: none; }
+.sky-sun { fill: var(--warn); }
+.sun-rays { fill: none; stroke: var(--warn); stroke-width: 2; stroke-linecap: round; opacity: 0.65; }
+.sky-moon { fill: var(--level); }
+.sensor-parts { opacity: 1; transition: opacity 260ms ease; }
+.scene.is-unverified .sensor-parts { opacity: 0.38; }
+.sensor-question {
+  font: 700 24px var(--sans);
+  fill: var(--sig);
+  opacity: 0;
+  transition: opacity 260ms ease;
 }
-.level { transition: opacity 300ms ease; }
+.scene.is-unverified .sensor-question { opacity: 1; }
+.mast {
+  transform-box: view-box;
+  transform-origin: 0 0; /* Local foot: independent of antenna/head bounds. */
+  transition: transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+#soil-moving { transform: translate(0, 0) rotate(0deg); transform-box: view-box; transform-origin: 390px 267px; transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1); }
+#slope[data-ground="risk"] #soil-moving { transform: translate(5px, 3px) rotate(1deg); }
+#slope[data-ground="critical"] #soil-moving { transform: translate(38px, 24px) rotate(3deg); }
+.soil-fixed, .soil-mass { fill: url(#slope-soil); }
+.soil-mass { stroke: url(#slope-soil); stroke-width: 1.5; stroke-linejoin: round; }
+.crest, .slope-surface { fill: none; stroke: var(--surface); stroke-width: 3; stroke-linecap: round; }
+.soil-crack { fill: none; stroke: var(--sig); stroke-width: 2; opacity: 0; }
+#slope[data-ground="watch"] .slope-surface { stroke: var(--warn); }
+#slope[data-ground="risk"] .slope-surface,
+#slope[data-ground="critical"] .slope-surface { stroke: var(--bad); }
+#slope[data-ground="risk"] .soil-crack,
+#slope[data-ground="critical"] .soil-crack { opacity: 1; }
+.sensor { pointer-events: none; }
+.sensor-shadow { fill: var(--shadow); }
+.sensor-foot { fill: var(--panel-2); stroke: currentColor; stroke-width: 1.5; }
+.sensor-move { color: var(--sig); }
+.sensor-pole { fill: currentColor; }
+.sensor-shine { fill: none; stroke: var(--panel); stroke-width: 1; }
+.sensor-anchor { fill: none; stroke: currentColor; stroke-width: 2; }
+.sensor-body { fill: var(--panel); stroke: currentColor; stroke-width: 2; }
+.sensor-cap { fill: currentColor; }
+.sensor-seam, .sensor-vents, .sensor-aerial { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.sensor-leader { fill: none; stroke: currentColor; stroke-width: 1; }
+.sensor-led { fill: currentColor; }
+.plumb { fill: none; stroke: var(--level); stroke-width: 1; stroke-dasharray: 3 5; opacity: 0.6; transform-box: view-box; transform-origin: 0 0; transition: transform 650ms cubic-bezier(0.16, 1, 0.3, 1); }
+#angle-arc { fill: none; stroke: var(--sig); stroke-width: 2; }
 
 .verdict {
-  position: absolute;
-  left: 28px; top: 24px;
-  max-width: min(42ch, 52%);
+  order: 0;
+  flex: 0 0 auto;
+  padding: 24px 28px 8px;
   pointer-events: none;
 }
 .state {
@@ -309,13 +340,14 @@ kbd {
 }
 
 .gauges {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
+  order: 3;
+  flex: 0 0 auto;
   margin: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   padding: 20px 28px 18px;
+  border-top: 1px solid var(--line);
   background: linear-gradient(transparent, var(--gauge-fade) 46%);
 }
 .gauges div { min-width: 0; }
@@ -336,22 +368,18 @@ kbd {
 }
 
 .scene-note {
-  position: absolute;
-  right: 20px; bottom: 92px;
-  margin: 0;
-  font: 12px/1.4 var(--mono);
+  order: 2;
+  flex: 0 0 auto;
+  margin: 0 28px 14px;
+  font: 12px/1.5 var(--sans);
   letter-spacing: 0.03em;
   color: var(--dim);
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 160ms ease;
 }
-.scene:hover .scene-note,
-.scene:focus-within .scene-note { opacity: 1; }
 .stale {
-  position: absolute;
+  order: -1;
+  flex: 0 0 auto;
   z-index: 3;
-  top: 0; left: 0; right: 0;
   margin: 0;
   padding: 8px 28px;
   font: 12px/1.5 var(--mono);
@@ -360,8 +388,7 @@ kbd {
   background: var(--stale-bg);
   border-bottom: 1px solid var(--stale-line);
 }
-.scene.is-stale .verdict { top: 46px; }
-.scene.is-stale #slope { opacity: 0.62; filter: saturate(0.7); }
+.scene.is-stale #slope { filter: saturate(0.55); }
 
 /* ---------- rail ---------- */
 
@@ -404,9 +431,11 @@ kbd {
 .sw-cursor { border-top-style: dotted; border-color: var(--chart-cursor); }
 .sw-rain { width: 8px; height: 8px; border: 0; background: var(--chart-rain); }
 .sw-soil { border-color: var(--chart-soil); }
+.sw-band { border-top-width: 8px; border-color: var(--chart-band); }
 canvas { display: block; width: 100%; }
 #chart-tilt { height: 150px; }
 #chart-load { height: 118px; }
+#chart-forecast { height: 118px; }
 .chart-note {
   margin: 8px 0 0;
   font: 12px/1.6 var(--mono);
@@ -419,6 +448,28 @@ canvas { display: block; width: 100%; }
 .block:hover .chart-note,
 .block:focus-within .chart-note { opacity: 1; }
 .chart-note b { color: var(--sig); font-weight: 500; }
+
+.weather-note { margin: 6px 0; font-size: 0.8125rem; line-height: 1.45; color: var(--ink-2); }
+#weather-status { font-weight: 600; overflow-wrap: anywhere; }
+.weather-table { margin-top: 10px; }
+.weather-table :is(th, td) + :is(th, td) { padding-inline-start: 8px; }
+.weather-table :is(th, td):nth-child(n+3) { text-align: right; }
+.weather-table td:nth-child(2) { font-family: var(--sans); overflow-wrap: anywhere; }
+
+.site-config { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); }
+.site-config summary { cursor: pointer; font: 600 11px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.site-config summary:hover { color: var(--ink); }
+.site-config[open] summary { margin-bottom: 9px; }
+.site-config label { display: block; margin-bottom: 6px; font: 11px/1.3 var(--sans); color: var(--ink-2); }
+.site-row { display: flex; gap: 6px; }
+.site-row input {
+  flex: 1; min-width: 0; padding: 8px; border: 1px solid var(--line-2); border-radius: 2px;
+  background: var(--bg-2); color: var(--ink); font: 12px/1 var(--mono);
+}
+.site-row input::placeholder { color: var(--dim); }
+.site-row button { flex: 0 0 auto; }
+.site-msg:empty { display: none; }
+.site-msg { color: var(--ink); }
 
 .nodes { width: 100%; border-collapse: collapse; font: 12px/1.45 var(--mono); font-variant-numeric: tabular-nums; }
 .nodes th {
@@ -521,73 +572,6 @@ canvas { display: block; width: 100%; }
 }
 .ghost-link:hover { border-color: var(--line-2); color: var(--ink); }
 
-/* ---------- demo page ---------- */
-
-.demo-shell {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px 40px;
-}
-.demo-card {
-  width: min(580px, 100%);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  padding: 28px 30px 26px;
-  border-radius: 3px;
-}
-.demo-kicker {
-  margin: 0 0 10px;
-  font: 11px/1 var(--mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--dim);
-}
-.demo-card h1 {
-  margin: 0 0 12px;
-  font: 600 30px/1.15 var(--sans);
-  color: var(--ink);
-}
-.demo-intro { margin: 0 0 20px; font: 15px/1.65 var(--sans); color: var(--ink-2); }
-.demo-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.demo-status {
-  margin: 18px 0 0;
-  min-height: 1.5em;
-  font: 13px/1.5 var(--mono);
-  color: var(--muted);
-}
-.demo-status.err { color: var(--bad); }
-.demo-points { margin: 20px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.demo-points li {
-  display: grid; grid-template-columns: 16px 1fr; gap: 10px;
-  font: 13px/1.55 var(--sans); color: var(--muted);
-}
-.demo-points b { color: var(--ink-2); font-weight: 600; }
-.demo-points i { color: var(--sig); font-style: normal; font-family: var(--mono); font-size: 12px; }
-.demo-note {
-  margin: 20px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font: 13px/1.6 var(--sans);
-  color: var(--dim);
-}
-.demo-open {
-  display: inline-block;
-  margin-top: 16px;
-  font: 600 12px/1 var(--sans);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sig);
-  text-decoration: none;
-}
-.demo-open:hover { text-decoration: underline; }
-.demo-ops { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
-.demo-ops summary { cursor: pointer; font: 600 11px/1 var(--sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.demo-ops p { margin: 10px 0 0; font: 12px/1.6 var(--mono); color: var(--dim); }
-.demo-ops code { color: var(--ink-2); }
-
 /* ---------- dialog ---------- */
 
 .help {
@@ -668,33 +652,21 @@ canvas { display: block; width: 100%; }
 
 /* ---------- theme-bound scene + chart paint ---------- */
 
-#sky stop:first-child { stop-color: var(--sky-top); }
-#sky stop:last-child { stop-color: var(--sky-bottom); }
-#soil stop:first-child { stop-color: var(--soil-top); }
-#soil stop:last-child { stop-color: var(--soil-bottom); }
-#rock line { stroke: var(--rock); }
-.ridge { fill: var(--ridge); }
-.ridge-line { stroke: var(--ridge-line); }
-.bedrock { fill: var(--bedrock); }
-.surface { stroke: var(--surface); }
-.water { stroke: var(--water); }
-.level { stroke: var(--level); }
-#mast-ref rect { fill: var(--panel-2); stroke: var(--metal); }
-#ref-mast line { stroke: var(--metal); }
-#mast-move ellipse { fill: var(--shadow); }
-#move-mast rect { fill: var(--panel-2); }
+#slope-soil stop:first-child { stop-color: var(--soil-top); }
+#slope-soil stop:last-child { stop-color: var(--soil-bottom); }
 
 /* ---------- responsive ---------- */
 
 @media (max-width: 980px) {
   body { height: auto; min-height: 100dvh; overflow: auto; }
   .shell { display: flex; flex-direction: column; }
-  .scene { height: 64dvh; min-height: 380px; border-right: 0; border-bottom: 1px solid var(--line); }
-  .verdict { left: 18px; top: 16px; max-width: 60%; }
+  .scene { flex: 0 0 auto; height: auto; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  #slope { flex: 0 0 auto; height: clamp(220px, 42vw, 360px); }
+  .verdict { padding: 20px 18px 10px; }
   .state { font-size: 26px; }
   .sentence { font-size: 15px; }
   .gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px 18px 14px; gap: 12px 16px; }
-  .scene-note { bottom: 126px; right: 18px; }
+  .scene-note { margin: 4px 18px 14px; }
   .gauges dd { font-size: 18px; }
   .rail { overflow: visible; padding: 18px 18px 0; }
   .strip { position: sticky; bottom: 0; z-index: 10; padding: 10px 18px 8px; }
@@ -705,6 +677,22 @@ canvas { display: block; width: 100%; }
 }
 
 @media (max-width: 420px) {
+  .bar { align-items: flex-start; }
+  .brand { flex: 0 0 auto; }
+  .brand-mark { letter-spacing: 0.12em; }
+  .bar-meta { gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .bar-meta .ingest { order: 3; width: 100%; justify-content: flex-end; }
+  .bar-meta .ghost-link,
+  .bar-meta button { padding: 7px 6px; font-size: 11px; }
+  .state { font-size: 24px; }
+  .sentence { font-size: 14px; }
+  .gauges { padding-left: 16px; padding-right: 16px; }
+  .gauges dt { font-size: 11px; letter-spacing: 0.08em; }
+  .gauges dd { font-size: 16px; }
+  .node-tag { font-size: 21px; }
+  .angle-tag { font-size: 24px; }
+  .strip-scale { font-size: 11px; }
+  .strip-keys { gap: 4px; white-space: nowrap; font-size: 11px; }
   .strip-actions button { padding: 8px 9px; letter-spacing: 0.06em; }
   .chip { display: none; }
 }

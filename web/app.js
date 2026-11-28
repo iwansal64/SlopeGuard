@@ -11,6 +11,14 @@ const state = {
 const LEVEL_DEG = 2.0; // mirrors analysis::BaselineConfig::default().relative_pitch_deg
 const TILT_DRAW = 4; // visual exaggeration, labelled on the scene
 const WINDOW_S = 1800;
+const KNOWN_STATES = new Set(["STABLE", "WATCH", "MOVEMENT_RISK", "CRITICAL"]);
+const EXPLAIN_ERRORS = {
+  409: "explain.current",
+  429: "explain.busy",
+  502: "explain.unavailable",
+  503: "explain.unavailable",
+};
+const explanation = { view: null, pending: false, deadline: null, expiryTimer: 0, generation: 0 };
 
 const I18N = {
   en: {
@@ -18,7 +26,6 @@ const I18N = {
     "skip": "Skip to evidence",
     "brand.sub": "rainfall-induced slope-movement early warning",
     "help.shortcuts": "Guide",
-    "nav.demo": "Demo",
     "help.open.title": "Open the guide",
     "lang.switch": "Switch to Bahasa Indonesia",
     "theme.light": "Light",
@@ -30,14 +37,10 @@ const I18N = {
     "ingest.down": "offline",
     "ingest.wait": "connecting …",
     "clock.title": "site clock, latest packet",
-    "svg.title": "Site cross-section",
-    "svg.desc": "A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.",
-    "svg.reference": "REFERENCE",
-    "svg.movement": "MOVEMENT",
-    "scene.note": "tilt angles exaggerated ×4 to stay visible",
-    "scene.level": "true level",
-    "scene.water": "water table",
-    "scene.travel": "possible travel",
+    "svg.title": "Slope monitoring",
+    "svg.desc": "One sensor on a soil slope. Background hills, trees, sun or moon are decoration, not data. Relative tilt is exaggerated four times. Ground movement is schematic, not measured displacement or landslide detection.",
+    "svg.movement": "SLOPE SENSOR",
+    "scene.note": "Hills & trees: decorative · tilt ×4 · ground movement illustrative",
     "legend.tilt": "Tilt",
     "legend.baseline": "2° baseline",
     "legend.cursor": "Time cursor",
@@ -60,6 +63,38 @@ const I18N = {
     "load.sub": "rain per interval · soil %",
     "load.aria": "Rainfall bars and soil moisture over time",
     "load.empty": "no packets in this window",
+    "forecast.title": "30-minute outlook",
+    "forecast.sub": "advisory extrapolation · degrees",
+    "forecast.aria": "Predicted relative tilt for the next 30 minutes with an uncertainty band",
+    "legend.forecast": "Predicted tilt",
+    "legend.band": "Uncertainty",
+    "forecast.note": "advisory · 30 min <b>{state}</b> · trend <b>{slope}</b>",
+    "forecast.empty": "collecting stable sensor history…",
+    "forecast.unavailable": "no forecast: {reason}",
+    "forecast.why.NO_DATA": "no sensor data",
+    "forecast.why.STALE_REFERENCE": "reference sensor stale",
+    "forecast.why.SHORT_HISTORY": "less than 10 minutes of usable history",
+    "forecast.why.FLAT_HISTORY": "history too flat to extrapolate",
+    "forecast.disclaimer": "Advisory extrapolation, not a validated prediction. Never used for alerts.",
+    "weather.title": "Area weather forecast",
+    "weather.loading": "Waiting for the forecast…",
+    "weather.disabled": "Set the device's BMKG village or ward code below to enable forecasts.",
+    "weather.unavailable": "Forecast unavailable. Sensor monitoring is unaffected.",
+    "weather.stale": "Cached forecast · refresh delayed",
+    "weather.time": "Local time",
+    "weather.condition": "Condition",
+    "weather.temp": "Temp. (°C)",
+    "weather.humidity": "Humidity (%)",
+    "weather.updated": "Fetched {time}",
+    "weather.notice": "Forecast only. Not a site measurement or an input to the slope verdict.",
+    "weather.configure": "Set device location",
+    "weather.adm4": "BMKG village or ward code",
+    "weather.adm4Help": "Find the site's village code at data.bmkg.go.id, for example 31.71.03.1001.",
+    "weather.save": "Save",
+    "weather.saving": "Saving location…",
+    "weather.saved": "Location saved. Fetching the forecast…",
+    "weather.invalid": "Enter a code like 31.71.03.1001.",
+    "weather.saveFailed": "Could not save the location. Check the dashboard is running from the repo root.",
     "more.summary": "Sensors & system",
     "nodes.caption": "Sensor health",
     "nodes.node": "Sensor",
@@ -72,22 +107,29 @@ const I18N = {
     "role.reference": "reference sensor",
     "facts.rule": "How it decides",
     "facts.horizon": "Forecast window",
-    "facts.model": "AI model",
+    "facts.model": "AI forecast model",
     "facts.ingest": "Connection",
     "facts.rejects": "Bad packets",
     "facts.rejects.none": "no rejects recorded",
     "facts.rule.value": "rule-based (no AI)",
     "facts.horizon.value": "30 min",
-    "model.live": "AI model running",
-    "model.report": "AI report ready, rule used",
-    "model.none": "AI not connected, rule used",
+    "model.live": "running",
+    "model.report": "report ready, rule used",
+    "model.none": "not connected, rule used",
+    "explain.title": "Gemini explanation",
+    "explain.notice": "On request, SlopeGuard sends the local rule status and reasons to Google. Gemini selects an eligible reason and returns reviewed, localized text—not a prediction, warning, or safety guidance.",
+    "explain.button": "Generate explanation",
+    "explain.pending": "Generating explanation…",
+    "explain.fresh": "Fresh readings from both sensors are required.",
+    "explain.unverified": "Current data is unverified.",
+    "explain.current": "Current data changed or is unverified. Try again.",
+    "explain.busy": "Gemini is busy. Try again shortly.",
+    "explain.unavailable": "Gemini is unavailable. Try again later.",
+    "explain.failed": "Could not generate an explanation. Try again.",
+    "explain.changed": "Verdict changed. Explanation discarded.",
     "quality.MISSING": "no sensor data",
     "quality.DEGRADED": "sensor data unreliable",
     "strip.live": "Live",
-    "strip.storm": "Storm demo",
-    "strip.storm.title": "Replay a recorded storm to watch the dashboard react",
-    "strip.dry": "Calm demo",
-    "strip.dry.title": "Replay a calm recording to see a normal day",
     "strip.liveEdge": "LIVE EDGE",
     "strip.viewing": "VIEWING {time}",
     "scrub.aria": "Time cursor, drag to inspect a moment",
@@ -117,9 +159,9 @@ const I18N = {
     "reason.NO_DATA": "no sensor packets in the window",
     "reason.DB_UNAVAILABLE": "data store unavailable",
     "verdict.apiDown": "The dashboard service cannot be reached. Retrying every 2 seconds.",
-    "verdict.dbMissing": "The data store is not ready. Try a demo below.",
-    "verdict.noData": "No sensor data yet. Make sure the sensor is powered and connected — or try a demo below.",
-    "stale.none": "NO DATA YET — nothing has arrived. Try a demo below or power the sensor.",
+    "verdict.dbMissing": "The data store is not ready.",
+    "verdict.noData": "No sensor data yet. Make sure the sensor is powered and connected.",
+    "stale.none": "NO DATA YET — nothing has arrived. Power the sensor.",
     "stale.fault": "SENSOR FAULT — {node} reports {status}. Measurements are not trusted.",
     "stale.stale": "STALE — newest packet {age} old. Values shown are the last known, not current.",
     "help.title": "Guide",
@@ -133,7 +175,7 @@ const I18N = {
     "help.l": "Return the cursor to live",
     "help.arrows": "Step through the recording",
     "help.q": "Open or close this panel",
-    "help.note": "This verdict comes from a simple rule, not a trained AI model. Demo recordings are not field results.",
+    "help.note": "This verdict comes from a simple rule, not a trained AI model. Synthetic recordings are not field results.",
     "help.close": "Close",
     "lang.btn.toId": "Bahasa",
     "lang.btn.toEn": "English",
@@ -148,12 +190,12 @@ const I18N = {
     "tour.gauges.body": "Tilt compares the slope sensor with the reference sensor. Rain is the last 15 minutes. Soil is moisture at the probe. Rate is how fast tilt changes. Hover a chart to see exact numbers.",
     "tour.evidence.title": "History",
     "tour.scene.title": "The drawing",
-    "tour.scene.body": "The slope sensor (orange) tilts downhill as the soil moves; the reference sensor stays on stable rock. The dashed line is true level, the blue dotted curve is the water table, and the dashed orange curve shows possible travel.",
+    "tour.scene.body": "Background hills and trees are decoration, not data. The sensor follows relative tilt, drawn ×4. The dashed guide marks upright. WATCH shows loading; MOVEMENT RISK shows a small soil shift; CRITICAL shows separation. Ground movement is illustrative, not measured displacement.",
     "tour.evidence.body": "Top chart: solid orange is tilt, dashed orange is the 2° baseline, dotted pale is the time cursor. Bottom chart: blue bars are rain per packet, the thin line is soil moisture. Drag the timeline below to look back in time.",
     "tour.more.title": "Sensors & system",
-    "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made. The slope sensor sits in the soil; the reference sensor sits on stable bedrock.",
+    "tour.more.body": "Open this to see when each sensor last reported, its battery and signal, plus how decisions are made.",
     "tour.strip.title": "Timeline",
-    "tour.strip.body": "Drag the slider to review the last 30 minutes; Live returns to now. Rain onset and the 2° crossing are marked on the track. Demos have their own page, opened from the Demo button in the header.",
+    "tour.strip.body": "Drag the slider to review the last 30 minutes; Live returns to now. Rain onset and the 2° crossing are marked on the track.",
     "tour.lang.title": "Language & theme",
     "tour.lang.body": "Use these buttons to switch between English and Bahasa Indonesia and between the light and dark theme. Your choices are remembered.",
     "noscript": "This dashboard needs JavaScript. The API is still readable at",
@@ -163,7 +205,6 @@ const I18N = {
     "skip": "Langsung ke bukti",
     "brand.sub": "peringatan dini pergerakan lereng akibat hujan",
     "help.shortcuts": "Panduan",
-    "nav.demo": "Demo",
     "help.open.title": "Buka panduan",
     "lang.switch": "Ganti ke Bahasa Inggris",
     "theme.light": "Terang",
@@ -175,14 +216,10 @@ const I18N = {
     "ingest.down": "offline",
     "ingest.wait": "menghubungkan …",
     "clock.title": "jam situs, paket terbaru",
-    "svg.title": "Penampang situs",
-    "svg.desc": "Lereng tanah di atas batuan dasar. Sensor pergerakan tertanam di tanah, sensor referensi di batuan dasar. Kedua tiang miring sesuai sudut terukur; hujan dan muka air tanah mengikuti data sensor.",
-    "svg.reference": "REFERENSI",
-    "svg.movement": "PERGERAKAN",
-    "scene.note": "sudut tilt diperbesar ×4 agar terlihat jelas",
-    "scene.level": "level sebenarnya",
-    "scene.water": "muka air tanah",
-    "scene.travel": "potensi pergerakan",
+    "svg.title": "Pemantauan lereng",
+    "svg.desc": "Satu sensor di lereng tanah. Bukit, pohon, matahari atau bulan di latar hanya dekorasi, bukan data. Tilt relatif diperbesar empat kali. Gerak tanah hanya ilustrasi, bukan pergeseran terukur atau deteksi longsor.",
+    "svg.movement": "SENSOR LERENG",
+    "scene.note": "Bukit & pohon: dekorasi · tilt ×4 · gerak tanah hanya ilustrasi",
     "legend.tilt": "Tilt",
     "legend.baseline": "baseline 2°",
     "legend.cursor": "Kursor waktu",
@@ -205,6 +242,38 @@ const I18N = {
     "load.sub": "hujan per interval · kelembapan %",
     "load.aria": "Batang hujan dan kelembapan tanah dari waktu ke waktu",
     "load.empty": "tidak ada paket di jendela ini",
+    "forecast.title": "Proyeksi 30 menit",
+    "forecast.sub": "ekstrapolasi saran · derajat",
+    "forecast.aria": "Prediksi tilt relatif untuk 30 menit ke depan dengan pita ketidakpastian",
+    "legend.forecast": "Tilt prediksi",
+    "legend.band": "Ketidakpastian",
+    "forecast.note": "saran · 30 menit <b>{state}</b> · tren <b>{slope}</b>",
+    "forecast.empty": "mengumpulkan riwayat sensor yang stabil…",
+    "forecast.unavailable": "tidak ada proyeksi: {reason}",
+    "forecast.why.NO_DATA": "belum ada data sensor",
+    "forecast.why.STALE_REFERENCE": "sensor referensi kedaluwarsa",
+    "forecast.why.SHORT_HISTORY": "riwayat layak kurang dari 10 menit",
+    "forecast.why.FLAT_HISTORY": "riwayat terlalu datar untuk diekstrapolasi",
+    "forecast.disclaimer": "Ekstrapolasi saran, bukan prediksi tervalidasi. Tidak pernah dipakai untuk peringatan.",
+    "weather.title": "Prakiraan cuaca wilayah",
+    "weather.loading": "Menunggu prakiraan cuaca…",
+    "weather.disabled": "Isi kode desa atau kelurahan BMKG perangkat di bawah untuk menampilkan prakiraan.",
+    "weather.unavailable": "Prakiraan tidak tersedia. Pemantauan sensor tidak terpengaruh.",
+    "weather.stale": "Prakiraan tersimpan · pembaruan tertunda",
+    "weather.time": "Waktu setempat",
+    "weather.condition": "Kondisi",
+    "weather.temp": "Suhu (°C)",
+    "weather.humidity": "Kelembapan (%)",
+    "weather.updated": "Diambil {time}",
+    "weather.notice": "Hanya prakiraan. Bukan pengukuran di lokasi dan tidak digunakan untuk menentukan status lereng.",
+    "weather.configure": "Atur lokasi perangkat",
+    "weather.adm4": "Kode desa atau kelurahan BMKG",
+    "weather.adm4Help": "Cari kode desa lokasi di data.bmkg.go.id, misalnya 31.71.03.1001.",
+    "weather.save": "Simpan",
+    "weather.saving": "Menyimpan lokasi…",
+    "weather.saved": "Lokasi tersimpan. Mengambil prakiraan…",
+    "weather.invalid": "Masukkan kode seperti 31.71.03.1001.",
+    "weather.saveFailed": "Lokasi gagal disimpan. Pastikan dashboard dijalankan dari akar repositori.",
     "more.summary": "Sensor & sistem",
     "nodes.caption": "Kesehatan sensor",
     "nodes.node": "Sensor",
@@ -217,22 +286,29 @@ const I18N = {
     "role.reference": "sensor referensi",
     "facts.rule": "Dasar keputusan",
     "facts.horizon": "Horizon prediksi",
-    "facts.model": "Model AI",
+    "facts.model": "Model prediksi AI",
     "facts.ingest": "Koneksi",
     "facts.rejects": "Paket ditolak",
     "facts.rejects.none": "belum ada penolakan",
     "facts.rule.value": "berbasis aturan (belum AI)",
     "facts.horizon.value": "30 menit",
-    "model.live": "model AI aktif",
-    "model.report": "laporan AI siap, aturan dipakai",
-    "model.none": "AI belum terhubung, aturan dipakai",
+    "model.live": "aktif",
+    "model.report": "laporan siap, aturan dipakai",
+    "model.none": "belum terhubung, aturan dipakai",
+    "explain.title": "Penjelasan Gemini",
+    "explain.notice": "Saat diminta, SlopeGuard mengirim status dan alasan aturan lokal ke Google. Gemini memilih alasan yang memenuhi syarat dan mengembalikan teks terlokalisasi yang telah ditinjau—bukan prediksi, peringatan, atau panduan keselamatan.",
+    "explain.button": "Buat penjelasan",
+    "explain.pending": "Sedang membuat penjelasan…",
+    "explain.fresh": "Pembacaan terbaru dari kedua sensor diperlukan.",
+    "explain.unverified": "Data saat ini belum terverifikasi.",
+    "explain.current": "Data saat ini berubah atau belum terverifikasi. Coba lagi.",
+    "explain.busy": "Gemini sedang sibuk. Tunggu sebentar, lalu coba lagi.",
+    "explain.unavailable": "Gemini tidak tersedia. Coba lagi nanti.",
+    "explain.failed": "Penjelasan tidak dapat dibuat. Coba lagi.",
+    "explain.changed": "Status berubah. Penjelasan tidak ditampilkan.",
     "quality.MISSING": "belum ada data sensor",
     "quality.DEGRADED": "data sensor tidak valid",
     "strip.live": "Live",
-    "strip.storm": "Demo badai",
-    "strip.storm.title": "Putar rekaman badai untuk melihat reaksi dashboard",
-    "strip.dry": "Demo tenang",
-    "strip.dry.title": "Putar rekaman hari tenang untuk melihat kondisi normal",
     "strip.liveEdge": "LIVE",
     "strip.viewing": "LIHAT {time}",
     "scrub.aria": "Kursor waktu, geser untuk melihat momen tertentu",
@@ -262,9 +338,9 @@ const I18N = {
     "reason.NO_DATA": "tidak ada paket sensor di jendela",
     "reason.DB_UNAVAILABLE": "database tidak tersedia",
     "verdict.apiDown": "Layanan dashboard tidak dapat dihubungi. Mencoba lagi tiap 2 detik.",
-    "verdict.dbMissing": "Database belum siap. Coba demo di bawah.",
-    "verdict.noData": "Belum ada data sensor. Pastikan sensor menyala dan terhubung — atau coba demo di bawah.",
-    "stale.none": "BELUM ADA DATA — belum ada data yang masuk. Coba demo di bawah atau nyalakan sensor.",
+    "verdict.dbMissing": "Database belum siap.",
+    "verdict.noData": "Belum ada data sensor. Pastikan sensor menyala dan terhubung.",
+    "stale.none": "BELUM ADA DATA — belum ada data yang masuk. Nyalakan sensor.",
     "stale.fault": "GANGGUAN SENSOR — {node} melaporkan {status}. Pengukuran tidak dapat dipercaya.",
     "stale.stale": "DATA LAMA — paket terbaru berumur {age}. Nilai yang tampil adalah data terakhir, bukan kondisi saat ini.",
     "help.title": "Panduan",
@@ -278,7 +354,7 @@ const I18N = {
     "help.l": "Kembalikan kursor ke mode live",
     "help.arrows": "Maju atau mundur satu paket data",
     "help.q": "Buka atau tutup panel ini",
-    "help.note": "Status ini berasal dari aturan sederhana, bukan model AI terlatih. Rekaman demo bukan hasil lapangan.",
+    "help.note": "Status ini berasal dari aturan sederhana, bukan model AI terlatih. Rekaman sintetis bukan hasil lapangan.",
     "help.close": "Tutup",
     "lang.btn.toId": "Bahasa",
     "lang.btn.toEn": "English",
@@ -293,12 +369,12 @@ const I18N = {
     "tour.gauges.body": "Tilt membandingkan sensor slope dengan sensor referensi. Hujan adalah 15 menit terakhir. Tanah adalah kelembapan di probe. Laju adalah kecepatan perubahan tilt. Arahkan kursor ke grafik untuk angka pastinya.",
     "tour.evidence.title": "Riwayat",
     "tour.scene.title": "Ilustrasi lereng",
-    "tour.scene.body": "Sensor slope (oranye) miring ke bawah saat tanah bergerak; sensor referensi tetap di batuan stabil. Garis putus-putus adalah level sebenarnya, kurva biru titik-titik adalah muka air tanah, dan kurva oranye putus-putus menunjukkan potensi pergerakan.",
+    "tour.scene.body": "Bukit dan pohon di latar hanya dekorasi, bukan data. Sensor mengikuti tilt relatif, diperbesar ×4. Garis putus-putus menandai posisi tegak. WASPADA menunjukkan beban; RISIKO PERGERAKAN menunjukkan pergeseran kecil; KRITIS menunjukkan tanah terpisah. Gerak tanah hanya ilustrasi, bukan pergeseran terukur.",
     "tour.evidence.body": "Grafik atas: oranye solid adalah tilt, oranye putus-putus adalah baseline 2°, titik-titik pucat adalah kursor waktu. Grafik bawah: batang biru adalah hujan per paket, garis tipis adalah kelembapan tanah. Geser timeline di bawah untuk melihat ke belakang.",
     "tour.more.title": "Sensor & sistem",
-    "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan. Sensor slope tertanam di tanah; sensor referensi di batuan dasar yang stabil.",
+    "tour.more.body": "Buka bagian ini untuk melihat kapan tiap sensor terakhir mengirim data, baterai dan sinyalnya, serta dasar keputusan.",
     "tour.strip.title": "Timeline",
-    "tour.strip.body": "Geser slider untuk meninjau 30 menit terakhir; Live kembali ke sekarang. Awal hujan dan saat melewati 2° ditandai di trek. Demo punya halaman sendiri, dibuka lewat tombol Demo di header.",
+    "tour.strip.body": "Geser slider untuk meninjau 30 menit terakhir; Live kembali ke sekarang. Awal hujan dan saat melewati 2° ditandai di trek.",
     "tour.lang.title": "Bahasa & tema",
     "tour.lang.body": "Gunakan tombol ini untuk berganti bahasa (Indonesia/Inggris) dan tema (terang/gelap). Pilihan Anda diingat.",
     "noscript": "Dashboard ini membutuhkan JavaScript. API tetap bisa dibaca di",
@@ -339,6 +415,8 @@ function applyLanguage() {
   document.querySelectorAll("[data-i18n-title]").forEach((el) => {
     el.title = t(el.dataset.i18nTitle);
   });
+  const siteMsg = $("#site-msg");
+  if (siteMsg?.dataset?.key) siteMsg.textContent = t(siteMsg.dataset.key);
   const btn = $("#lang-btn");
   btn.textContent = t(lang === "en" ? "lang.btn.toId" : "lang.btn.toEn");
   btn.title = t("lang.switch");
@@ -455,7 +533,7 @@ function renderVerdict() {
   const p = pi >= 0 ? movePoints()[pi] : null;
   const rel = p ? p[3] : rule?.inputs?.rel_pitch_deg;
   $("#g-rel").textContent = signed(rel, 2, "°");
-  $("#g-rain").textContent = p ? fmt(sumRain(pi), 1, " mm") : fmt(rule?.inputs?.rain_15m_mm, 1, " mm");
+  $("#g-rain").textContent = p ? fmt(sumRain(pi), 1, " mm") : fmt(rule?.quality === "MISSING" ? null : rule?.inputs?.rain_15m_mm, 1, " mm");
   $("#g-soil").textContent = p ? fmt(p[6], 0, " %") : fmt(rule?.inputs?.soil_moisture_pct, 0, " %");
 
   let rate = rule?.inputs?.tilt_rate_deg_min;
@@ -559,7 +637,7 @@ function stopRain() {
 function setRain(mm15) {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const mmMin = Math.max(0, mm15 ?? 0) / 15;
-  const on = mmMin > 0.05 && !reduced;
+  const on = mmMin > 0.05 && !reduced && !document.hidden;
   $("#rain").classList.toggle("on", on);
   if (!on) return stopRain();
   rain.speed = 315 + 315 * clamp(mmMin / 2, 0, 1);
@@ -571,47 +649,41 @@ function setRain(mm15) {
   }
 }
 
-function fitScene() {
-  const el = $("#slope");
-  const rect = el.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  const aspect = rect.width / rect.height;
-  const h = 620;
-  const w = Math.min(900, h * aspect);
-  const x = clamp(560 - w * 0.62, 0, 900 - w);
-  el.setAttribute("viewBox", `${x.toFixed(0)} 0 ${w.toFixed(0)} ${h}`);
-}
-
 function renderScene() {
   const pts = movePoints();
   const pi = activeIndex();
   const p = pi >= 0 ? pts[pi] : null;
   const rule = state.data?.rule;
-  const rel = p ? (p[3] ?? 0) : (rule?.inputs?.rel_pitch_deg ?? 0);
-  const angle = clamp(rel * TILT_DRAW, -22, 22);
-
-  // Pivot at the mast foot (fill-box bottom centre), not the view-box centre.
-  $("#move-mast").style.transform = `rotate(${angle.toFixed(2)}deg)`;
-  $("#move-angle").textContent = `${rel >= 0 ? "+" : "−"}${Math.abs(rel).toFixed(2)}°`;
-
-  const arcR = 56;
-  const a1 = (-90 * Math.PI) / 180;
-  const a2 = ((-90 + angle) * Math.PI) / 180;
-  const arc = `M ${600 + arcR * Math.cos(a1)} ${374 + arcR * Math.sin(a1)} A ${arcR} ${arcR} 0 0 ${angle >= 0 ? 1 : 0} ${600 + arcR * Math.cos(a2)} ${374 + arcR * Math.sin(a2)}`;
+  const rel = p ? p[3] : rule?.inputs?.rel_pitch_deg;
+  const angle = Number.isFinite(rel) ? clamp(rel * TILT_DRAW, -22, 22) : 0;
+  // The latest verdict must not be projected onto a historical cursor sample.
+  const verified = state.cursor === null && !state.error && rule?.quality === "GOOD" && Number.isFinite(rel) && (!p || p[10] === "OK");
+  // ponytail: schematic state poses, not a displacement model; use measured travel if available.
+  const ground = verified ? ({ STABLE: "stable", WATCH: "watch", MOVEMENT_RISK: "risk", CRITICAL: "critical" }[rule.state] ?? "unknown") : "unknown";
+  $("#slope").dataset.ground = ground;
+  // UNKNOWN renders as "UNVERIFIED": dim the hardware and ask instead of showing a trusted pose.
+  $(".scene").classList.toggle("is-unverified", rule?.state === "UNKNOWN" || (state.error !== null && !state.data));
+  // Subtract the soil's illustrative rotation: total mast lean still equals measured tilt ×4.
+  const groundAngle = ground === "critical" ? 3 : ground === "risk" ? 1 : 0;
+  $("#move-mast").style.transform = `rotate(${(angle - groundAngle).toFixed(2)}deg)`;
+  $("#move-angle").textContent = signed(rel, 2, "°");
+  const arcR = 58;
+  const a1 = ((-90 - groundAngle) * Math.PI) / 180;
+  const a2 = ((-90 + angle - groundAngle) * Math.PI) / 180;
+  const arc = `M ${arcR * Math.cos(a1)} ${arcR * Math.sin(a1)} A ${arcR} ${arcR} 0 0 ${angle >= 0 ? 1 : 0} ${arcR * Math.cos(a2)} ${arcR * Math.sin(a2)}`;
   $("#angle-arc").setAttribute("d", angle === 0 ? "" : arc);
-
-  $("#move-glow").setAttribute("opacity", state.data?.rule?.state === "STABLE" ? "0.25" : "0.9");
-  $("#ghost").setAttribute("opacity", Math.abs(rel) > 0.2 ? "0.5" : "0");
-
-  const soil = p ? p[6] : rule?.inputs?.soil_moisture_pct;
-  if (soil !== null && soil !== undefined) {
-    const y = clamp(560 - soil * 2.6, 300, 540);
-    $("#water").setAttribute("d", `M0 ${y} C 220 ${y - 8} 420 ${y + 22} 900 ${y + 112}`);
-    $("#water-label").setAttribute("y", String(y + 36));
-  }
+  $(".plumb").style.transform = `rotate(${-groundAngle}deg)`;
 
   const rain15 = p ? sumRain(pi) : rule?.inputs?.rain_15m_mm;
   setRain(rain15);
+}
+
+// Decoration only: the scene shows local PC time, never sensor time.
+// SVG elements have no `hidden` IDL property; toggle the attribute so [hidden] applies.
+function renderSky(now = new Date()) {
+  const day = now.getHours() >= 6 && now.getHours() < 18;
+  $("#sun").toggleAttribute("hidden", !day);
+  $("#moon").toggleAttribute("hidden", day);
 }
 
 /* ---------------- charts ---------------- */
@@ -816,6 +888,98 @@ function drawLoad() {
     : t("load.empty");
 }
 
+function drawForecast() {
+  const canvas = $("#chart-forecast");
+  const { ctx, w, h } = setupCanvas(canvas);
+  const note = $("#forecast-note");
+  const f = state.data?.forecast;
+  note.title = t("forecast.disclaimer");
+  const vals = f?.quality === "GOOD" ? (f.values ?? []) : [];
+  const pad = { l: 34, r: 10, t: 12, b: 20 };
+  const iw = Math.max(1, w - pad.l - pad.r);
+  const ih = Math.max(1, h - pad.t - pad.b);
+
+  if (!vals.length) {
+    ctx.fillStyle = cssVar("--dim");
+    ctx.textAlign = "center";
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillText(t("forecast.empty"), w / 2, h / 2);
+    const why = f?.degraded_reasons?.[0];
+    note.textContent = why
+      ? t("forecast.unavailable", { reason: t(`forecast.why.${why}`) })
+      : t("forecast.empty");
+    return;
+  }
+
+  const span = vals.length;
+  const X = (m) => pad.l + (m / span) * iw;
+  let maxAbs = LEVEL_DEG;
+  for (const v of vals) maxAbs = Math.max(maxAbs, Math.abs(v.pitch_deg) + v.band_deg);
+  const top = maxAbs * 1.15;
+  const Y = (v) => pad.t + ((top - v) / (2 * top)) * ih;
+
+  ctx.strokeStyle = cssVar("--chart-grid");
+  ctx.lineWidth = 1;
+  for (const v of [-LEVEL_DEG, 0, LEVEL_DEG]) {
+    ctx.setLineDash(v === 0 ? [] : [3, 4]);
+    ctx.strokeStyle = v === 0 ? cssVar("--chart-zero") : cssVar("--chart-threshold");
+    ctx.beginPath();
+    ctx.moveTo(pad.l, Y(v));
+    ctx.lineTo(w - pad.r, Y(v));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = cssVar("--dim");
+  ctx.font = MONO;
+  ctx.textAlign = "right";
+  ctx.fillText("+2°", pad.l - 6, Y(LEVEL_DEG) + 3);
+  ctx.fillText("0", pad.l - 6, Y(0) + 3);
+  ctx.fillText("−2°", pad.l - 6, Y(-LEVEL_DEG) + 3);
+
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = X(v.t_plus_min);
+    const y = Y(v.pitch_deg + v.band_deg);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  for (let i = vals.length - 1; i >= 0; i--) {
+    ctx.lineTo(X(vals[i].t_plus_min), Y(vals[i].pitch_deg - vals[i].band_deg));
+  }
+  ctx.closePath();
+  ctx.fillStyle = cssVar("--chart-band");
+  ctx.fill();
+
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = X(v.t_plus_min);
+    const y = Y(v.pitch_deg);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.strokeStyle = cssVar("--sig");
+  ctx.lineWidth = 1.6;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  const last = vals[vals.length - 1];
+  ctx.beginPath();
+  ctx.arc(X(last.t_plus_min), Y(last.pitch_deg), 3.2, 0, Math.PI * 2);
+  ctx.fillStyle = cssVar("--chart-dot");
+  ctx.fill();
+
+  ctx.fillStyle = cssVar("--dim");
+  ctx.font = MONO;
+  ctx.textAlign = "left";
+  ctx.fillText("now", pad.l, h - 6);
+  ctx.textAlign = "right";
+  ctx.fillText(`+${span}m`, w - pad.r, h - 6);
+
+  note.innerHTML = t("forecast.note", {
+    state: t(`state.${last.state}`),
+    slope: signed(f.slope_deg_min, 2, t("unit.rate")),
+  });
+}
+
 function renderNotes() {
   const d = state.data;
   if (!d) {
@@ -915,14 +1079,214 @@ function renderStrip() {
   $("#clock").title = t("clock.title");
 }
 
+function ruleSnapshot(rule) {
+  if (typeof rule?.state !== "string" || typeof rule.quality !== "string" ||
+      !Array.isArray(rule.reasons) || !rule.reasons.every((reason) => typeof reason === "string")) return null;
+  return JSON.stringify([rule.state, rule.quality, rule.reasons]);
+}
+
+function expireExplanation() {
+  explanation.deadline = null;
+  explanation.view = null;
+  explanation.pending = false;
+  explanation.expiryTimer = 0;
+  explanation.generation += 1;
+  renderExplanation();
+}
+
+function scheduleExplanationExpiry(data, pollStarted) {
+  if (explanation.expiryTimer) clearTimeout(explanation.expiryTimer);
+  explanation.expiryTimer = 0;
+  const validUntil = data?.gemini?.valid_until_s;
+  const validAt = Date.parse(data?.now);
+  if (data?.gemini?.configured !== true || !Number.isFinite(validUntil) || !Number.isFinite(validAt)) {
+    explanation.deadline = null;
+    explanation.view = null;
+    explanation.pending = false;
+    explanation.generation += 1;
+    return;
+  }
+  const validFor = validUntil * 1000 - validAt;
+  explanation.deadline = pollStarted + validFor;
+  if (explanation.deadline <= performance.now()) return expireExplanation();
+  explanation.expiryTimer = setTimeout(expireExplanation, explanation.deadline - performance.now());
+}
+
+function explanationContext() {
+  const rule = state.data?.rule;
+  const snapshot = ruleSnapshot(rule);
+  const fresh = Number.isFinite(explanation.deadline) && performance.now() < explanation.deadline;
+  const verified = fresh && snapshot !== null && rule.quality === "GOOD" && KNOWN_STATES.has(rule.state);
+  const visible = state.data?.gemini?.configured === true && state.cursor === null && state.error === null;
+  return { visible, snapshot, verified };
+}
+
+function renderExplanation() {
+  const { visible, snapshot, verified } = explanationContext();
+  const { view, pending } = explanation;
+  if (view && (!visible || view.lang !== lang || (!pending && view.snapshot !== snapshot))) {
+    explanation.view = null;
+  }
+
+  $("#explain").hidden = !visible;
+  $("#explain-btn").disabled = !visible || !verified || pending;
+  const output = $("#explain-output");
+  let text = "";
+  if (visible) {
+    text = pending ? t("explain.pending") : explanation.view?.text ?? (verified ? "" : t("explain.fresh"));
+  }
+  if (output.textContent !== text) output.textContent = text;
+}
+
+async function requestExplanation() {
+  const { visible, verified } = explanationContext();
+  if (!visible || !verified || explanation.pending) return;
+
+  const view = { lang };
+  const generation = ++explanation.generation;
+  explanation.view = view;
+  explanation.pending = true;
+  renderExplanation();
+  try {
+    const res = await fetch(`/api/explain?window_s=${WINDOW_S}`, {
+      method: "POST",
+      mode: "same-origin",
+      referrerPolicy: "strict-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang }),
+    });
+    if (!res.ok) {
+      view.text = t(EXPLAIN_ERRORS[res.status] ?? "explain.failed");
+      return;
+    }
+    const data = await res.json();
+    if (generation !== explanation.generation) return;
+    const snapshot = ruleSnapshot(data?.rule);
+    if (data?.source !== "gemini" || data.rule?.basis !== "evidence-rule" || snapshot === null ||
+        typeof data.explanation !== "string" || !data.explanation.trim()) {
+      view.text = t("explain.failed");
+      return;
+    }
+    const current = explanationContext();
+    if (snapshot !== current.snapshot) view.text = t("explain.current");
+    else if (!current.verified) view.text = t("explain.current");
+    else view.text = data.explanation;
+  } catch {
+    view.text = t("explain.failed");
+  } finally {
+    if (generation === explanation.generation) {
+      view.snapshot = ruleSnapshot(state.data?.rule);
+      explanation.pending = false;
+      renderExplanation();
+    }
+  }
+}
+
 /* ---------------- render ---------------- */
 
+function renderWeather() {
+  const weather = state.data?.weather;
+  const status = state.error ? "unavailable" : (weather?.status ?? "loading");
+  const area = [weather?.area, weather?.city].filter(Boolean).join(", ");
+  const show = (status === "ready" || status === "stale") && weather?.slots?.length > 0;
+  const message = status === "ready" && show ? area : status === "stale" && show
+    ? `${t("weather.stale")} · ${area}` : t(`weather.${status}`);
+  const statusEl = $("#weather-status");
+  if (statusEl.textContent !== message) statusEl.textContent = message;
+  const config = $("#site-config");
+  const input = $("#site-adm4");
+  if (input && input !== document.activeElement && !input.value && weather?.adm4) input.value = weather.adm4;
+  if (config && config.dataset && status === "disabled" && !config.dataset.seen) {
+    config.open = true;
+    config.dataset.seen = "1";
+  }
+  const msg = $("#site-msg");
+  if (
+    msg?.dataset &&
+    (status === "ready" || status === "stale") &&
+    ["weather.saved", "weather.saving"].includes(msg.dataset.key)
+  ) {
+    msg.textContent = "";
+    msg.dataset.key = "";
+  }
+  $("#weather-table").hidden = !show;
+  $("#weather-updated").hidden = !show;
+  if (!show) return;
+
+  const timeZone = ["Asia/Jakarta", "Asia/Pontianak", "Asia/Makassar", "Asia/Jayapura"].includes(weather.timezone)
+    ? weather.timezone : "UTC";
+  const time = new Intl.DateTimeFormat(locale(), {
+    timeZone, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    hourCycle: "h23", timeZoneName: "short",
+  });
+  $("#weather-rows").replaceChildren(...weather.slots.map((slot) => {
+    const row = document.createElement("tr");
+    const at = document.createElement("time");
+    at.dateTime = slot.valid_at;
+    at.textContent = time.format(Date.parse(slot.valid_at));
+    const date = document.createElement("td");
+    date.replaceChildren(at);
+    const condition = lang === "en" ? (slot.condition_en ?? slot.condition_id) : slot.condition_id;
+    const cells = [condition, slot.temperature_c, slot.humidity_pct].map((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value ?? "—";
+      return cell;
+    });
+    row.replaceChildren(date, ...cells);
+    return row;
+  }));
+  $("#weather-updated").textContent = t("weather.updated", { time: time.format(Date.parse(weather.fetched_at)) });
+}
+
+function setSiteMessage(key) {
+  const el = $("#site-msg");
+  if (!el) return;
+  el.dataset.key = key ?? "";
+  el.textContent = key ? t(key) : "";
+}
+
+async function saveSite(event) {
+  event.preventDefault();
+  const input = $("#site-adm4");
+  const button = $("#site-save");
+  if (!input || !button) return;
+  const adm4 = input.value.trim();
+  if (!/^\d{2}\.\d{2}\.\d{2}\.\d{4}$/.test(adm4)) {
+    input.setAttribute("aria-invalid", "true");
+    setSiteMessage("weather.invalid");
+    input.focus();
+    return;
+  }
+  input.removeAttribute("aria-invalid");
+  button.disabled = true;
+  setSiteMessage("weather.saving");
+  try {
+    const res = await fetch("/api/site", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ adm4 }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const body = await res.json();
+    if (state.data) state.data.weather = body.weather;
+    setSiteMessage("weather.saved");
+    renderWeather();
+  } catch {
+    setSiteMessage("weather.saveFailed");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function render() {
-  fitScene();
   renderVerdict();
+  renderWeather();
+  renderExplanation();
+  renderSky();
   renderScene();
   drawTilt();
   drawLoad();
+  drawForecast();
   renderNotes();
   renderTrust();
   renderStrip();
@@ -939,6 +1303,7 @@ let fetching = false;
 async function refresh() {
   if (fetching) return;
   fetching = true;
+  const pollStarted = performance.now();
   try {
     const res = await fetch(`/api/data?window_s=${WINDOW_S}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -949,6 +1314,7 @@ async function refresh() {
     }
     state.data = next;
     state.error = null;
+    scheduleExplanationExpiry(next, pollStarted);
   } catch (err) {
     state.error = err.message;
   } finally {
@@ -1073,6 +1439,8 @@ function wire() {
   });
 
   $("#live-btn").addEventListener("click", goLive);
+  $("#site-form").addEventListener("submit", saveSite);
+  $("#explain-btn").addEventListener("click", requestExplanation);
 
   $("#theme-btn").addEventListener("click", () => {
     applyTheme(currentTheme() === "dark" ? "light" : "dark");
@@ -1162,8 +1530,10 @@ function wire() {
     true,
   );
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) refresh();
+    if (document.hidden) stopRain();
+    else refresh();
   });
+  matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", renderScene);
 
   applyLanguage();
   const needsTour = !tourDone();

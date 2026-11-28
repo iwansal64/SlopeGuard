@@ -22,7 +22,6 @@
     <span id="site" class="chip mono">—</span>
     <span class="ingest" id="ingest"><i id="ingest-dot" class="dot" aria-hidden="true"></i><span id="ingest-text" data-i18n="ingest.wait">connecting …</span></span>
     <time id="clock" class="mono">--:--:--</time>
-    <a class="ghost-link" href="/demo/" data-i18n="nav.demo">Demo</a>
     <button id="theme-btn" class="ghost" type="button">Light</button>
     <button id="lang-btn" class="ghost" type="button" title="Switch to Bahasa Indonesia">Bahasa</button>
     <button id="help-btn" class="ghost" aria-haspopup="dialog" data-i18n-title="help.open.title"><span data-i18n="help.shortcuts">Guide</span> <kbd>?</kbd></button>
@@ -32,83 +31,69 @@
 <main class="shell">
 
   <section class="scene" aria-labelledby="state-word">
-    <svg id="slope" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="slope-title slope-desc">
-      <title id="slope-title" data-i18n="svg.title">Site cross-section</title>
-      <desc id="slope-desc" data-i18n="svg.desc">A soil slope over bedrock. The movement node stands in the soil, the reference node on bedrock. Both masts tilt with their measured angle; rain and the water table follow the telemetry.</desc>
+    <svg id="slope" viewBox="230 140 670 460" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="slope-title slope-desc" focusable="false" data-ground="unknown">
+      <title id="slope-title" data-i18n="svg.title">Slope monitoring</title>
+      <desc id="slope-desc" data-i18n="svg.desc">One sensor on a soil slope. Background hills, trees, sun or moon are decoration, not data. Relative tilt is exaggerated four times. Ground movement is schematic, not measured displacement or landslide detection.</desc>
       <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#1b1714"/>
-          <stop offset="1" stop-color="#13100e"/>
+        <linearGradient id="slope-soil" gradientUnits="userSpaceOnUse" x1="0" y1="230" x2="0" y2="620">
+          <stop offset="0" stop-color="#74553b"/>
+          <stop offset="1" stop-color="#443127"/>
         </linearGradient>
-        <linearGradient id="soil" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#33261c"/>
-          <stop offset="1" stop-color="#241b15"/>
-        </linearGradient>
-        <pattern id="rock" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
-          <line x1="0" y1="0" x2="0" y2="26" stroke="#3b2f26" stroke-width="1"/>
-        </pattern>
-        <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stop-color="currentColor" stop-opacity="0.55"/>
-          <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
-        </radialGradient>
+        <mask id="moon-cut">
+          <rect x="270" y="160" width="60" height="60" fill="#fff"/>
+          <circle cx="311" cy="183" r="17" fill="#000"/>
+        </mask>
       </defs>
 
-      <rect width="900" height="620" fill="url(#sky)"/>
-
-      <!-- distant ridge: terrain depth, not content -->
-      <path class="ridge" d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196 L900 260 L0 300 Z" fill="#191511" opacity="0.9"/>
-      <path class="ridge-line" d="M0 252 C 180 214 330 246 470 216 C 610 186 780 214 900 196" fill="none" stroke="#2d241c" stroke-width="1"/>
-
-      <!-- slope body -->
-      <path d="M0 150 C 260 165 470 300 900 520 L900 620 L0 620 Z" fill="url(#soil)"/>
-      <path class="bedrock" d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="#1c1713"/>
-      <path d="M0 320 C 260 330 520 430 900 600 L900 620 L0 620 Z" fill="url(#rock)" opacity="0.7"/>
-      <path class="surface" d="M0 150 C 260 165 470 300 900 520" fill="none" stroke="#5a4635" stroke-width="2"/>
-
-      <!-- water table -->
-      <path id="water" class="water" d="M0 470 C 220 462 420 500 900 588" fill="none" stroke="#3f7e86" stroke-width="2.5" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>
-      <text id="water-label" x="430" y="506" class="svg-label" text-anchor="middle" data-i18n="scene.water">water table</text>
-
-      <!-- rain -->
+      <g class="scenery" aria-hidden="true">
+        <path d="M230 332 C375 292 435 322 510 291 C585 260 634 273 699 248 C769 220 824 231 900 207 V620 H230 Z"/>
+        <path d="M751 250 V229 H737 L747 215 H741 L755 192 L769 215 H763 L774 229 H760 V250 Z M807 239 V221 H795 L804 208 H799 L811 188 L823 208 H818 L828 221 H816 V239 Z"/>
+      </g>
+      <g id="sun" class="sky sky-sun" aria-hidden="true">
+        <circle cx="300" cy="190" r="16"/>
+        <path class="sun-rays" d="M323 190 H331 M300 167 V159 M277 190 H269 M300 213 V221 M316.3 173.7 321.9 168.1 M316.3 206.3 321.9 211.9 M283.7 173.7 278.1 168.1 M283.7 206.3 278.1 211.9"/>
+      </g>
+      <g id="moon" class="sky sky-moon" aria-hidden="true" hidden>
+        <circle cx="300" cy="190" r="17" mask="url(#moon-cut)"/>
+      </g>
       <g id="rain" class="rain" aria-hidden="true"></g>
 
-      <!-- true level through the sensor heads -->
-      <line class="level" x1="0" y1="250" x2="900" y2="250" stroke="#b09a83" stroke-width="1" stroke-dasharray="3 6" opacity="0.55"/>
-      <text x="868" y="242" class="svg-label" text-anchor="end" data-i18n="scene.level">true level</text>
+      <path class="soil-fixed" d="M0 238 C160 218 296 230 390 267 C420 366 480 424 620 478 V620 H0 Z"/>
+      <path class="crest" d="M0 238 C160 218 296 230 390 267"/>
 
-      <!-- reference node on bedrock -->
-      <g id="mast-ref">
-        <rect x="132" y="298" width="38" height="14" rx="2" fill="#2c241d" stroke="#5a4635"/>
-        <g class="mast" id="ref-mast">
-          <line x1="151" y1="300" x2="151" y2="236" stroke="#b09a83" stroke-width="3"/>
-          <rect x="142" y="222" width="18" height="16" rx="2" fill="#13100e" stroke="#b09a83"/>
+      <!-- Soil mass and sensor share one transform: the foot cannot float away. -->
+      <g id="soil-moving">
+        <path class="soil-mass" d="M390 267 C435 284 476 309 530 338 C658 418 756 462 900 502 V620 H620 V478 C480 424 420 366 390 267 Z"/>
+        <path class="slope-surface" d="M390 267 C435 284 476 309 530 338 C658 418 756 462 900 502"/>
+        <path class="soil-crack" d="M413 278 l-6 15 l11 12 l-3 14 M457 299 l-5 13 l8 9"/>
+
+        <g id="mast-move" class="sensor sensor-move" transform="translate(610 385)">
+          <g class="sensor-parts">
+            <ellipse class="sensor-shadow" cx="5" cy="5" rx="30" ry="6"/>
+            <path class="sensor-anchor" d="M0 4 V34 M-5 23 H5 M-5 31 H5"/>
+            <path class="sensor-foot" d="M-24 -3 H22 L29 3 L19 8 H-21 L-29 3 Z"/>
+            <g class="mast" id="move-mast">
+              <path class="sensor-pole" d="M-3 0 V-111 H3 V0 Z"/>
+              <path class="sensor-shine" d="M-1 -5 V-107"/>
+              <path class="sensor-aerial" d="M12 -141 V-157"/>
+              <rect class="sensor-body" x="-20" y="-141" width="40" height="32" rx="4"/>
+              <path class="sensor-cap" d="M-21 -135 V-140 Q-21 -144 -17 -144 H17 Q21 -144 21 -140 V-135 Z"/>
+              <path class="sensor-seam" d="M-13 -115 H13"/>
+              <circle class="sensor-led" cx="-10" cy="-126" r="3"/>
+              <path class="sensor-vents" d="M1 -128 H12 M1 -123 H12"/>
+            </g>
+            <path class="plumb" d="M0 -161 V-16"/>
+            <path id="angle-arc" d=""/>
+            <path class="sensor-leader" d="M0 40 V50"/>
+          </g>
+          <text x="0" y="69" class="svg-label node-tag" text-anchor="middle" data-i18n="svg.movement">SLOPE SENSOR</text>
+          <text x="0" y="-178" class="svg-label angle-tag" text-anchor="middle" id="move-angle">—</text>
+          <text x="0" y="-202" class="svg-label sensor-question" text-anchor="middle" aria-hidden="true">?</text>
         </g>
-        <text x="151" y="330" class="svg-label" text-anchor="middle" data-i18n="svg.reference">REFERENCE</text>
       </g>
-
-      <!-- movement node in the soil -->
-      <g id="mast-move">
-        <ellipse cx="600" cy="378" rx="26" ry="7" fill="#13100e" opacity="0.55"/>
-        <g class="mast" id="move-mast">
-          <line x1="600" y1="374" x2="600" y2="262" stroke="currentColor" stroke-width="3.5"/>
-          <rect x="589" y="246" width="22" height="18" rx="2" fill="#13100e" stroke="currentColor" stroke-width="1.5"/>
-          <circle id="move-led" cx="600" cy="255" r="3.4" fill="currentColor"/>
-          <circle id="move-glow" cx="600" cy="255" r="16" fill="url(#glow)" opacity="0.0"/>
-        </g>
-        <path id="angle-arc" d="" fill="none" stroke="#b09a83" stroke-width="1" opacity="0.6"/>
-        <text x="618" y="244" class="svg-label mono" id="move-angle">0.00°</text>
-        <text x="600" y="400" class="svg-label" text-anchor="middle" data-i18n="svg.movement">MOVEMENT</text>
-      </g>
-
-      <!-- displacement hint -->
-      <g id="ghost" opacity="0">
-        <path d="M600 262 C 660 262 700 300 720 340" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 5"/>
-        <text x="654" y="332" class="svg-label" data-i18n="scene.travel">possible travel</text>
-      </g>
-
     </svg>
 
-    <p class="scene-note" data-i18n="scene.note">relative tilt drawn ×4 · dashed line is true level</p>
+    <p class="scene-note" data-i18n="scene.note">Hills &amp; trees: decorative · tilt ×4 · ground movement illustrative</p>
     <p id="stale" class="stale" role="status" hidden></p>
 
     <div class="verdict">
@@ -126,6 +111,34 @@
   </section>
 
   <aside class="rail">
+    <section class="block" id="weather" aria-labelledby="weather-title">
+      <h2><span id="weather-title" data-i18n="weather.title">Area weather forecast</span><a class="hsub" href="https://data.bmkg.go.id/prakiraan-cuaca/" aria-label="Badan Meteorologi, Klimatologi, dan Geofisika">BMKG</a></h2>
+      <p class="weather-note" id="weather-status" role="status" data-i18n="weather.loading">Waiting for the forecast…</p>
+      <table class="nodes weather-table" id="weather-table" aria-labelledby="weather-title" hidden>
+        <thead><tr>
+          <th scope="col" data-i18n="weather.time">Local time</th>
+          <th scope="col" data-i18n="weather.condition">Condition</th>
+          <th scope="col" data-i18n="weather.temp">Temp. (°C)</th>
+          <th scope="col" data-i18n="weather.humidity">Humidity (%)</th>
+        </tr></thead>
+        <tbody id="weather-rows"></tbody>
+      </table>
+      <p class="weather-note" id="weather-updated" hidden></p>
+      <p class="weather-note" data-i18n="weather.notice">Forecast only. Not a site measurement or an input to the slope verdict.</p>
+      <details class="site-config" id="site-config">
+        <summary data-i18n="weather.configure">Set device location</summary>
+        <form id="site-form">
+          <label for="site-adm4" data-i18n="weather.adm4">BMKG village or ward code</label>
+          <div class="site-row">
+            <input id="site-adm4" name="adm4" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="31.71.03.1001" aria-describedby="site-help site-msg" required>
+            <button type="submit" id="site-save" data-i18n="weather.save">Save</button>
+          </div>
+          <p class="weather-note" id="site-help" data-i18n="weather.adm4Help">Find the site's village code at data.bmkg.go.id.</p>
+          <p class="weather-note site-msg" id="site-msg" role="status"></p>
+        </form>
+      </details>
+    </section>
+
     <section class="block" id="evidence" tabindex="-1">
       <h2><span data-i18n="trend.title">Risk trend</span> <span class="hsub" data-i18n="trend.sub">movement − reference, degrees</span></h2>
       <ul class="chart-legend">
@@ -148,6 +161,24 @@
       <p class="chart-note" id="load-note">—</p>
     </section>
 
+    <section class="block" id="forecast">
+      <h2><span data-i18n="forecast.title">30-minute outlook</span> <span class="hsub" data-i18n="forecast.sub">advisory extrapolation · degrees</span></h2>
+      <ul class="chart-legend">
+        <li><i class="sw sw-tilt"></i><span data-i18n="legend.forecast">Predicted tilt</span></li>
+        <li><i class="sw sw-band"></i><span data-i18n="legend.band">Uncertainty</span></li>
+        <li><i class="sw sw-threshold"></i><span data-i18n="legend.baseline">2° baseline</span></li>
+      </ul>
+      <canvas id="chart-forecast" height="118" aria-label="Predicted relative tilt for the next 30 minutes with an uncertainty band" data-i18n-aria="forecast.aria"></canvas>
+      <p class="chart-note" id="forecast-note">—</p>
+    </section>
+
+    <section class="block" id="explain" aria-labelledby="explain-title" hidden>
+      <h2 id="explain-title" data-i18n="explain.title">Gemini explanation</h2>
+      <p id="explain-notice" data-i18n="explain.notice">On request, SlopeGuard sends the local rule status and reasons to Google. Gemini selects an eligible reason and returns reviewed, localized text—not a prediction, warning, or safety guidance.</p>
+      <button id="explain-btn" class="ghost" type="button" aria-describedby="explain-notice" data-i18n="explain.button" disabled>Generate explanation</button>
+      <p id="explain-output" role="status"></p>
+    </section>
+
     <details class="more">
       <summary><span data-i18n="more.summary">Node health &amp; system</span><span class="hsub" id="quality"></span></summary>
       <table class="nodes">
@@ -160,7 +191,7 @@
       <ul class="facts">
         <li><span data-i18n="facts.rule">Decision rule</span><b id="fact-rule">evidence baseline</b></li>
         <li><span data-i18n="facts.horizon">Horizon</span><b data-i18n="facts.horizon.value">30 min</b></li>
-        <li><span data-i18n="facts.model">ML model</span><b id="fact-model">not wired</b></li>
+        <li><span data-i18n="facts.model">AI forecast model</span><b id="fact-model">not wired</b></li>
         <li><span data-i18n="facts.ingest">Connection</span><b id="fact-ingest">—</b></li>
         <li><span data-i18n="facts.rejects">Rejected</span><b id="fact-rejects">—</b></li>
       </ul>
@@ -217,7 +248,7 @@
       <div><dt><kbd>?</kbd></dt><dd data-i18n="help.q">Open or close this panel</dd></div>
     </dl>
   </details>
-  <p class="help-note" data-i18n="help.note">This verdict comes from a simple rule, not a trained AI model. Demo recordings are not field results.</p>
+  <p class="help-note" data-i18n="help.note">This verdict comes from a simple rule, not a trained AI model. Synthetic recordings are not field results.</p>
   <button id="help-close" class="ghost" type="button" data-i18n="help.close">Close</button>
 </dialog>
 
