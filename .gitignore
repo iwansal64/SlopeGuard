@@ -1,3 +1,5 @@
 data/raw/
 config/nodes.tokens
+config/site.json
 rust/*/target/
+.env
