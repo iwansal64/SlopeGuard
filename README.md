@@ -210,6 +210,49 @@ The dashboard must answer:
 2. How soon is the predicted window?
 3. Can the system be trusted now?
 
+### Demonstrate BMKG forecasts without hardware
+
+From the repo root, rebuild the dashboard, then run it on a free local port:
+
+```sh
+cargo build --locked --release --manifest-path rust/dashboard/Cargo.toml
+SG_DASH_ADDR=127.0.0.1:18091 ./run.sh dash
+```
+
+Open `http://127.0.0.1:18091/`, expand **Set device location**, enter the
+pilot village/ward's `adm4` code (for example `31.71.03.1001` for Kemayoran),
+and save. The dashboard writes `config/site.json` (git-ignored), reloads the
+forecast immediately, and keeps the location across restarts and database
+resets. `SG_BMKG_ADM4` remains a one-shot fallback when that file is absent.
+No API key or receiver is needed for the forecast. The dashboard stays
+loopback-only, so configure it from the machine running it; a phone needs a
+LAN-exposed, authenticated deployment first (not implemented).
+
+Location is site configuration, not telemetry. Packets carry `site_id` but no
+GPS or coordinates. Sending a location in every packet would change the frozen
+schema for data that never changes; sending it only in the first packet loses
+it on packet loss, replay, or reboot, and duplicate suppression can discard
+the retry. A server-side record is retryable, idempotent, survives reboots,
+and leaves the device firmware unchanged. The ESP hotspot can carry the
+configuration request, but the dashboard host still needs internet for BMKG.
+
+[BMKG's public forecast](https://data.bmkg.go.id/prakiraan-cuaca/) provides
+area forecasts at three-hour intervals. The dashboard shows up to three
+upcoming forecast times, conditions, temperature, and air humidity. It
+refreshes every 30 minutes after success, retries after five minutes on
+failure, and marks remaining cached forecasts as stale if a refresh fails.
+`GET /api/data` exposes the same snapshot under `weather`, including
+source, area code, forecast issue time per slot, and fetch timestamp when
+available. Each slot also carries BMKG's undocumented `tp` value as
+`precipitation`, unlabelled: confirm its unit before any prediction use.
+Offsets such as `+0700` are normalized to an IANA zone so the browser can
+render local time. `POST /api/site` accepts `{"adm4":"..."}` only from the
+dashboard's own origin and validates the code before writing the file.
+Missing readings are unknown, not zero. Forecasts do not enter the sensor
+log, animation, model, or slope verdict; wiring them into prediction is later
+work. With no sensor data, the slope verdict remains `UNKNOWN`. The synthetic
+replay still works offline: `python3 scripts/demo.py storm`.
+
 ## 9. Golden-path demonstration
 
 1. Show calibrated stable readings.

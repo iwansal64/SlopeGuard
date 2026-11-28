@@ -3,7 +3,7 @@
 Owner of this file: UI workstream. The Rust backend workstream owns
 `PROGRESS.md`; this file never overrides it.
 
-## Status: STEP 7 of 9 done (2026-11-25)
+## Status: STEP 8 of 9 partly done (2026-11-28)
 
 Working dashboard at `http://127.0.0.1:8090`, one entry point at the repo root:
 
@@ -11,7 +11,7 @@ Working dashboard at `http://127.0.0.1:8090`, one entry point at the repo root:
 ./run.sh demo      # build, start receiver + dashboard, foreground, Ctrl-C stops both
 ./run.sh test      # tests + clippy + fmt for both crates
 ./run.sh smoke     # live HTTP end-to-end (backend script)
-./run.sh storm     # push the synthetic fixture through a running dashboard
+./run.sh storm     # wrapper for python3 scripts/demo.py storm
 ./run.sh status    # ports, packet count, rule state, receiver health
 ./run.sh reset     # delete the database
 ./run.sh help      # everything else
@@ -27,8 +27,9 @@ Working dashboard at `http://127.0.0.1:8090`, one entry point at the repo root:
   canvas. Total shipped: 8.9 KB HTML, 13.6 KB CSS, 22 KB JS (uncompressed).
 - Ports: receiver `127.0.0.1:8080`, dashboard `127.0.0.1:8090`.
 - The dashboard reads SQLite **read-only** and never writes telemetry.
-- Replay is pushed through the real receiver (`POST /telemetry`) with the node
-  tokens read server-side. Tokens never reach the browser.
+- Replay is pushed through the real receiver (`POST /telemetry`) by
+  `scripts/demo.py` with the node tokens read locally. Tokens never reach the
+  browser, and the website has no demo UI.
 - Fixtures have distinct seq ranges (storm 1..120, dry 5001..5020) so the calm
   control can follow the storm in one database; replaying either twice is a
   409 duplicate by design.
@@ -44,14 +45,14 @@ Working dashboard at `http://127.0.0.1:8090`, one entry point at the repo root:
 
 - [x] 0 Inventory: contract, receiver routes, DB schema, fixture, device journey
 - [x] 1 Plan frozen (this file)
-- [x] 2 Read-only API + static server (`GET /api/data`, `POST /api/replay`)
+- [x] 2 Read-only API + static server (`GET /api/data`)
 - [x] 3 UI shell: bar, slope scene, verdict, gauges, trust rail
 - [x] 4 Charts: relative tilt vs 2.0° baseline; rain bars + soil line
 - [x] 5 Time scrubber + live edge + keyboard control
 - [x] 6 States: first run, no telemetry, stale, sensor fault, receiver down,
       replay failure, reduced motion, 390 px, 1536 px
 - [x] 7 Verify: build, clippy, fmt, tests, live end-to-end, DOM audit
-- [ ] 8 Optional: SSE, incident notes, live model wiring (backend model exists; dashboard integration remains)
+- [x] 8 Weather: BMKG forecast panel, operator-set device location, precipitation passthrough
 - [ ] 9 Handoff note to the backend agent (below)
 
 ## What the screen says
@@ -66,7 +67,7 @@ and can the measurement be trusted (packet age, battery, signal, rejects,
 receiver state, model state). The strip scrubs the recording; markers show rain
 onset and the 2° crossing.
 
-Keyboard: `R` storm replay, `D` dry replay, `L` live, `←/→` step, `?` help.
+Keyboard: `L` live, `←/→` step, `?` help.
 
 ## API contract (v0, owned by the UI crate)
 
@@ -82,25 +83,60 @@ sensor_status,battery_v,signal_dbm,packets}]`,
 Points are arrays, not objects (smaller payload, faster parse). `t` is epoch
 seconds. Missing values are `null`, never 0.
 
-`POST /api/replay` body `{"scenario":"storm"|"stable","rate":1..60}` pushes a
-whitelisted fixture through the receiver. One replay at a time (429 while
-busy, no time cooldown so a demo can chain storm then dry), 502 when nothing
-could be pushed.
+Demo replay is terminal-only: `python3 scripts/demo.py storm|dry|stable`
+pushes the fixture through the receiver. `--rate 1..60` and
+`--receiver`/`--tokens` override the defaults.
+
+`GET /api/data` also carries `weather{status,source,adm4,area,city,timezone,
+fetched_at,slots[]}`, where `status` is `disabled|loading|ready|stale|
+unavailable` and each slot is `{valid_at,issued_at,condition_id,condition_en,
+temperature_c,humidity_pct,precipitation}`. `precipitation` is BMKG's
+undocumented `tp`, passed through unlabelled.
+
+`POST /api/site` body `{"adm4":"31.71.03.1001"}` validates the ward code, writes
+`config/site.json` atomically, and restarts the BMKG snapshot for that area.
+Same-origin and loopback checks match `/api/explain`; the file is git-ignored.
+
+## Device location: one server-side record, not telemetry
+
+Decision: the location is dashboard configuration keyed to the pilot site, not
+a telemetry field. Telemetry has no GPS or coordinates, only `site_id`.
+
+- Per-packet location: forces a schema-version change for a value that never
+  changes, adds bytes to every packet, and needs a GPS fix (unreliable indoors).
+- First-packet-only: one lost first packet, reboot, or replay leaves the site
+  unlocated; duplicate suppression can discard the retry; backend restarts need
+  persistence anyway.
+- Server-side record: the operator saves once from the dashboard; the write is
+  validated, atomic, idempotent, visible to every consumer, and survives
+  restarts plus `./run.sh reset` (which deletes the database, not the file).
+
+The ESP hotspot can expose the configuration page, but the dashboard currently
+binds loopback only. A phone therefore cannot reach it until a LAN binding with
+operator authentication exists. Configure from the machine running the
+dashboard; an ESP captive portal would POST the same `/api/site` contract with a
+provisioning token (future work). The dashboard host still needs internet for
+BMKG; the hotspot alone does not provide it.
 
 ## Verified (actual)
 
 ```
-cargo test  --manifest-path rust/dashboard/Cargo.toml          -> 3 passed
+cargo test  --manifest-path rust/dashboard/Cargo.toml          -> 13 passed
 cargo clippy --manifest-path rust/dashboard/Cargo.toml --all-targets -D warnings -> clean
 cargo fmt --manifest-path rust/dashboard/Cargo.toml -- --check -> clean
+node scripts/smoke_weather.mjs                                 -> pass (copy, form IDs, states)
+no config/site.json -> weather disabled, location form auto-open, table hidden
+POST /api/site {"adm4":"31.71.03.1001"} -> 200, 3 forecast rows, rule UNKNOWN
+restart with config on disk -> weather ready without env var
+390x844 location form -> no overflow, input 292 px, button 56x32
 cargo test --manifest-path rust/slopeguard/Cargo.toml          -> all binaries pass
-./run.sh demo (SG_DB=/tmp/..., alt ports)                      -> page 200, 240 packets accepted, MOVEMENT_RISK
+./run.sh demo (SG_DB=/tmp/..., alt ports)                      -> page 200
+python3 scripts/demo.py storm                                  -> accepted 240, MOVEMENT_RISK
+python3 scripts/demo.py storm (again)                          -> duplicate 240 (idempotent)
 ./run.sh test                                                  -> 78 tests pass, clippy and fmt clean
 ./run.sh status / storm / dry / smoke                          -> all exercised
 ./run.sh demo killed with SIGTERM                              -> both ports released
-POST /api/replay storm                                         -> {"accepted":240,...}
-POST /api/replay storm (again)                                 -> 240 duplicate (idempotent)
-receiver stopped -> replay                                    -> 502, UI toast names the refused connection
+receiver stopped -> python3 scripts/demo.py storm              -> exit 1, "receiver unreachable"
 no database     -> UI shows "No database at <path>" + NO TELEMETRY banner
 stale > 30 s    -> UNKNOWN + "STALE — newest packet 2m 7s old"
 390x844         -> no horizontal overflow, sticky strip, scene reframed via viewBox
@@ -143,3 +179,6 @@ Before/after: the accept loop polled every 20 ms, giving avg 13.85 ms and max
   the vision model was unavailable for a human-style look pass at the end.
   Files: `cache/scratch/final-1536.png`, `final-390.png`.
 - Dashboard has no auth and binds loopback only. Do not expose the port.
+- Device location can be set only from the machine running the dashboard; phone
+  provisioning needs a LAN-exposed authenticated deployment or ESP captive
+  portal posting the same `/api/site` contract.
