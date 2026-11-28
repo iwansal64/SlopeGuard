@@ -66,8 +66,7 @@ cmd_serve() {
 cmd_dash() {
   ensure_bin "$DASH" "$DCARGO"
   port_busy "$DADDR" && die "port $DADDR is already in use"
-  exec "$DASH" --addr "$DADDR" --db "$DB" --web web \
-    --receiver "http://$ADDR" --tokens "$TOKENS"
+  exec "$DASH" --addr "$DADDR" --db "$DB" --web web --receiver "http://$ADDR"
 }
 
 cmd_demo() {
@@ -80,30 +79,20 @@ cmd_demo() {
 
   "$RECV" serve --addr "$ADDR" --db "$DB" --tokens "$TOKENS" &
   RECV_PID=$!
-  "$DASH" --addr "$DADDR" --db "$DB" --web web --receiver "http://$ADDR" --tokens "$TOKENS" &
+  "$DASH" --addr "$DADDR" --db "$DB" --web web --receiver "http://$ADDR" &
   DASH_PID=$!
   trap 'kill ${RECV_PID:-} ${DASH_PID:-} 2>/dev/null || true' EXIT INT TERM
 
   wait_http "http://$DADDR/" || die "dashboard did not answer on http://$DADDR"
   say "dashboard  http://$DADDR"
   say "receiver   http://$ADDR   db=$DB"
-  say "demo page: http://$DADDR/demo/   (or ./run.sh storm)"
+  say "play demo: python3 scripts/demo.py storm   (or ./run.sh storm)"
   wait $DASH_PID
 }
 
 cmd_replay() {
   local scenario=${1:-storm}
-  local body
-  body=$(curl -sS -X POST "http://$DADDR/api/replay" \
-    -H 'Content-Type: application/json' \
-    -d "{\"scenario\":\"$scenario\",\"rate\":${SG_RATE:-30}}" 2>&1) \
-    || die "dashboard not reachable at http://$DADDR (start it with ./run.sh demo)"
-  say "$body"
-  case $body in
-    *replay_in_progress*) say 'a replay is still running; wait for it to finish' ;;
-    *receiver_unreachable*) say 'receiver is down: ./run.sh serve (or ./run.sh demo)' ;;
-    *'"accepted":0'*) say 'nothing new accepted: this fixture is already stored (stop, then ./run.sh demo reset)' ;;
-  esac
+  SG_ADDR="$ADDR" SG_TOKENS="$TOKENS" python3 scripts/demo.py "$scenario"
 }
 
 cmd_status() {
@@ -153,8 +142,10 @@ RUN
                  dashboard on 127.0.0.1:8090, then wait in the foreground.
                  Ctrl-C stops both. "reset" deletes data/raw/slopeguard.db
                  first, which is the only way to replay a fixture again.
+                 Play a scenario from another terminal with
+                 python3 scripts/demo.py storm
   serve          Receiver only (POST /telemetry, GET /health).
-  dash           Dashboard only. Needs a receiver on :8080 to ingest.
+  dash           Dashboard only. BMKG forecasts do not need a receiver.
 
 CHECK
   test           Tests, clippy -D warnings and fmt --check for both crates.
@@ -166,17 +157,19 @@ CHECK
   status         Which ports answer, packet count, rule state, receiver health.
 
 FIXTURES
-  storm          Push data/replays/synthetic_storm.jsonl:
-                 20 simulated minutes of rain, 240 packets, ends in MOVEMENT_RISK.
-  dry            Push data/replays/synthetic_dry_control.jsonl:
-                 the calm control 25 minutes later, 40 packets, ends STABLE.
-                 Both go through the real receiver with config/nodes.tokens.
+  storm          python3 scripts/demo.py storm
+                 Push data/replays/synthetic_storm.jsonl: 20 simulated minutes
+                 of rain, 240 packets, ends in MOVEMENT_RISK.
+  dry            python3 scripts/demo.py dry
+                 Push data/replays/synthetic_dry_control.jsonl: the calm control
+                 25 minutes later, 40 packets, ends STABLE. Both go through the
+                 real receiver with config/nodes.tokens.
 
 WHY THE DASHBOARD MAY NOT CHANGE
   1. "0 accepted / N duplicate"
      The fixture is already in the database. Packets are keyed by
      (site, node, seq), so a replay is rejected as 409 by design. Stop the
-     script and run:  ./run.sh demo reset   then replay again.
+     services and run:  ./run.sh demo reset   then replay again.
   2. It worked, then the state went UNKNOWN after ~30 s
      The site stopped sending. The dashboard must not claim "normal" when it
      cannot hear the slope, so it shows UNKNOWN plus a STALE banner. Replaying
@@ -191,19 +184,23 @@ WHY THE DASHBOARD MAY NOT CHANGE
      yours: SG_ADDR=127.0.0.1:18081 SG_DASH_ADDR=127.0.0.1:18091 ./run.sh demo
 
 WHAT A GOOD DEMO LOOKS LIKE
-  ./run.sh demo reset          # empty database, both processes up
-  open http://127.0.0.1:8090   # UNKNOWN + "no telemetry" is correct here
-  press Replay storm           # state climbs WATCH -> MOVEMENT_RISK in ~20 s
-  press Dry control            # state returns to STABLE, rain stops
-  drag the strip / press <- -> # inspect any moment of the recording
-  ./run.sh storm               # same thing from a second shell
+  ./run.sh demo reset               # empty database, both processes up
+  open http://127.0.0.1:8090        # UNKNOWN + "no telemetry" is correct here
+  python3 scripts/demo.py storm     # WATCH -> MOVEMENT_RISK in ~20 s
+  python3 scripts/demo.py dry       # state returns to STABLE, rain stops
+  drag the strip / press <- ->      # inspect any moment of the recording
+  ./run.sh storm                    # wrapper for the same script
 
 ENVIRONMENT
   SG_DB          database path        (default data/raw/slopeguard.db)
   SG_TOKENS      node token file      (default config/nodes.tokens)
   SG_ADDR        receiver address     (default 127.0.0.1:8080)
   SG_DASH_ADDR   dashboard address    (default 127.0.0.1:8090)
-  SG_RATE        replay packets/sec   (default 30)
+  SG_RATE        replay packets/sec   (default 30, scripts/demo.py)
+  SG_BMKG_ADM4   BMKG village/ward code fallback when config/site.json is absent
+  config/site.json  device location saved from the weather panel (git-ignored)
+  GEMINI_API_KEY Google Generative Language API key (optional, dashboard only)
+  SG_GEMINI_MODEL Gemini model (default gemini-3.1-flash-lite)
 
 The UI itself: web/index.html, web/style.css, web/app.js. Plan and state:
 UI_PLAN.md. Backend work log: PROGRESS.md.
